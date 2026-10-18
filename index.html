@@ -38,7 +38,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 .op .l .mut{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .op b{white-space:nowrap}
 nav{position:fixed;left:0;right:0;bottom:0;background:var(--p);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
-nav button{flex:1;background:none;padding:8px 4px;color:var(--mut);font-size:12px;border-radius:10px}
+nav button{flex:1;background:none;padding:8px 2px;color:var(--mut);font-size:11px;border-radius:10px}
 nav button span{display:block;font-size:20px;line-height:1.1}
 nav button.on{color:var(--gold)}
 .seg{display:flex;background:var(--p2);border-radius:12px;padding:3px;gap:3px}
@@ -67,6 +67,10 @@ textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas
 .banner{background:#2a2410;border:1px solid var(--gold2);color:var(--gold);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:10px}
 .empty{color:var(--mut);text-align:center;padding:22px 0}
 .cat{display:flex;justify-content:space-between;padding:6px 0;font-size:15px}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pt{position:relative;background:var(--p);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center;min-height:86px;display:flex;flex-direction:column;justify-content:center;gap:2px;color:var(--txt)}
+.pt span{font-weight:600;font-size:14px;line-height:1.15}.pt b{color:var(--gold);font-size:13px}.pt small{font-size:11px;color:var(--mut)}
+.pt.sel{border-color:var(--gold);background:#2a2410}.pt i{position:absolute;top:4px;right:6px;font-style:normal;font-weight:800;color:var(--gold);font-size:14px}
 .x{background:var(--p2);border-radius:8px;padding:4px 10px;color:var(--red);font-size:14px}
 </style>
 </head>
@@ -74,7 +78,9 @@ textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas
 <div id="toast"></div>
 <div id="app"></div>
 <nav id="nav">
-  <button data-t="j" class="on"><span>🏦</span>Jamg'arma</button>
+  <button data-t="k" class="on"><span>💰</span>Kassa</button>
+  <button data-t="o"><span>📦</span>Ombor</button>
+  <button data-t="j"><span>🏦</span>Jamg'arma</button>
   <button data-t="h"><span>📒</span>Hisob</button>
   <button data-t="s"><span>⚙️</span>Sozlamalar</button>
 </nav>
@@ -108,6 +114,7 @@ var store = inTg ? {
 var CNT = {};   // nom -> hozirgi bo'laklar soni
 var queue = Promise.resolve();
 function saveName(name, obj){   // bo'laklab saqlash (Telegram: 1 qiymat <= 4096 belgi)
+  cloudDirty(name);
   queue = queue.then(function(){
     var empty = (Array.isArray(obj) && !obj.length);
     var s = empty ? "" : JSON.stringify(obj), n = empty ? 0 : Math.ceil(s.length / CHUNK), old = CNT[name] || 0, p = [];
@@ -145,7 +152,8 @@ function fmt(n){ n = Math.round(n || 0); var neg = n < 0; var s = String(Math.ab
 function pad(n){ return (n < 10 ? "0" : "") + n; }
 function iso(d){ return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
 function todayISO(){ return iso(new Date()); }
-function newId(){ return Date.now() + Math.floor(Math.random() * 1000); }
+var lastId = 0;
+function newId(){ var v = Date.now() * 1000 + Math.floor(Math.random() * 1000); if (v <= lastId) v = lastId + 1; lastId = v; return v; }
 function parseSum(s){
   s = String(s).toLowerCase().replace(/\s/g, "").replace(",", ".");
   var m = 1; if (/k$/.test(s)){ m = 1000; s = s.slice(0, -1); } else if (/m$/.test(s)){ m = 1000000; s = s.slice(0, -1); }
@@ -158,7 +166,8 @@ function toast(m, bad){ var t = $("#toast"); t.textContent = m; t.className = ba
 
 /* ================= ma'lumot ================= */
 var DEF_CATS = { d: ["Komp puli","Bar puli","Boshqa daromad"], r: ["Ijara","Elektr energiya","Internet","Kredit to'lovi","Soliq","Oylik maosh","Bar uchun tovar","Ta'mirlash","Reklama","Boshqa rasxod"] };
-var S = { funds: [], j: [], h: [], cats: { d: DEF_CATS.d.slice(), r: DEF_CATS.r.slice() }, tab: "j", fund: null, hm: todayISO().slice(0, 7), ready: false, more: 40 };
+var S = { funds: [], j: [], h: [], cats: { d: DEF_CATS.d.slice(), r: DEF_CATS.r.slice() }, tab: "k", fund: null, hm: todayISO().slice(0, 7), ready: false, more: 40,
+  k: [], sh: [], pr: [], mv: [], cart: {}, kmode: "prod", kpay: "naqt", ktype: "komp", omode: "day", km: todayISO().slice(0, 7) };
 
 function monthsOf(list){ var m = {}; list.forEach(function(o){ m[o.dt.slice(0, 7)] = 1; }); return Object.keys(m); }
 function saveMeta(){ return saveName("meta", { funds: S.funds, cats: S.cats }); }
@@ -173,12 +182,12 @@ function loadState(){
       if (nm === "meta"){ S.funds = v.funds || []; if (v.cats && v.cats.d && v.cats.r) S.cats = v.cats; }
       else if (/^j_\d{4}-\d{2}$/.test(nm)) S.j = S.j.concat(v);
       else if (/^h_\d{4}-\d{2}$/.test(nm)) S.h = S.h.concat(v);
+      else if (nm === "shifts") S.sh = v;
+      else if (nm === "prod") S.pr = v;
+      else if (/^k_\d{4}-\d{2}$/.test(nm)) S.k = S.k.concat(v);
+      else if (/^mv_\d{4}-\d{2}$/.test(nm)) S.mv = S.mv.concat(v);
     });
-    if (!S.funds.length && !S.j.length){
-      S.funds = ["Kredit","Svet (elektr)","Uy","Nalog"].map(function(n, i){ return { id: newId() + i, name: n, target: 0, day: 1 }; });
-      saveMeta();
-    }
-    S.ready = true;
+    if (!livePr().length) S.kmode = "num";
   });
 }
 
@@ -216,8 +225,11 @@ function render(){
   var a = $("#app");
   if (!S.ready){ a.innerHTML = '<h1>MAJOR</h1><div class="empty">Yuklanmoqda…</div>'; return; }
   [].forEach.call(document.querySelectorAll("nav button"), function(b){ b.classList.toggle("on", b.dataset.t === S.tab); });
-  var banner = inTg ? "" : '<div class="banner">Telegram tashqarisida ochildi: ma\'lumot faqat shu brauzerda saqlanadi.</div>';
-  if (S.tab === "j") a.innerHTML = banner + (S.fund ? fundView() : jamView());
+  var cb = (!CK && S.tab === "k") ? '<div class="banner">☁️ Bulut ulanmagan: Sozlamalar → Bulut. Ulamaguncha ma\'lumot faqat shu telefonda.</div>' : '';
+  var banner = cb + (inTg ? "" : '<div class="banner">Telegram tashqarisida ochildi: ma\'lumot faqat shu brauzerda saqlanadi.</div>');
+  if (S.tab === "k") a.innerHTML = banner + kassaView();
+  else if (S.tab === "o") a.innerHTML = banner + omborView();
+  else if (S.tab === "j") a.innerHTML = banner + (S.fund ? fundView() : jamView());
   else if (S.tab === "h") a.innerHTML = banner + hisobView();
   else a.innerHTML = banner + settingsView();
   syncBack();
@@ -303,10 +315,11 @@ function hisobView(){
 }
 
 function settingsView(){
-  var h = '<h1>SOZLAMALAR</h1><div class="card"><div class="row"><span>Jamg\'arma yozuvlari</span><b>' + S.j.length + '</b></div><div class="row" style="margin-top:6px"><span>Hisob yozuvlari</span><b>' + S.h.length + '</b></div>' +
+  var h = '<h1>SOZLAMALAR</h1><div class="card"><div class="row"><span>Jamg\'arma yozuvlari</span><b>' + S.j.length + '</b></div><div class="row" style="margin-top:6px"><span>Hisob yozuvlari</span><b>' + S.h.length + '</b></div><div class="row" style="margin-top:6px"><span>Kassa yozuvlari / smenalar</span><b>' + S.k.length + ' / ' + S.sh.length + '</b></div><div class="row" style="margin-top:6px"><span>Mahsulotlar</span><b>' + livePr().length + '</b></div>' +
     '<div class="mut" style="margin-top:8px">' + (inTg ? "Ma'lumot Telegram bulutida saqlanadi: kompyuter o'chiq bo'lsa ham ishlaydi, boshqa qurilmada ham shu hisob bilan ochilganda ko'rinadi." : "Telegram tashqarisida: ma'lumot shu brauzerda.") + '</div></div>';
+  h += cloudSettings();
   h += '<h2>Zaxira</h2><div class="grid2"><button class="btn ghost" id="exp">📤 Nusxa olish</button><button class="btn ghost" id="imp">📥 Tiklash / import</button></div>';
-  h += '<div class="mut" style="margin-top:8px">Kompyuterdagi eski ma\'lumotni ko\'chirish: jamgarma_data.json yoki hisob_data.json ichidagi matnni nusxalab, "Tiklash / import" ga qo\'ying.</div>';
+  h += '<div class="mut" style="margin-top:8px">Kompyuterdagi eski ma\'lumotni ko\'chirish: jamgarma_data.json, hisob_data.json yoki kassa_data.json ichidagi matnni nusxalab, "Tiklash / import" ga qo\'ying.</div>';
   ["d", "r"].forEach(function(k){
     h += '<h2>' + (k === "d" ? "Daromad" : "Rasxod") + ' kategoriyalari</h2><div class="card">';
     S.cats[k].forEach(function(c, i){ h += '<div class="cat"><span>' + esc(c) + '</span><button class="x" data-delcat="' + k + ':' + i + '">✕</button></div>'; });
@@ -408,7 +421,7 @@ function hopSheet(kind, id){
 }
 
 /* zaxira */
-function exportAll(){ return JSON.stringify({ app: "major", v: 1, jamgarma: { funds: S.funds, ops: S.j }, hisob: { ops: S.h, cats: S.cats } }); }
+function exportAll(){ return JSON.stringify({ app: "major", v: 1, jamgarma: { funds: S.funds, ops: S.j }, hisob: { ops: S.h, cats: S.cats }, kassa: { ops: S.k, shifts: S.sh, products: S.pr, moves: S.mv } }); }
 function expSheet(){
   var txt = exportAll();
   openSheet('<h3>Zaxira nusxa</h3><div class="mut">Matnni nusxalab, xavfsiz joyga (masalan, "Saqlangan xabarlar") tashlab qo\'ying. Kerak bo\'lsa "Tiklash / import" ga qaytarib qo\'yasiz.</div><label>MATN</label><textarea id="exr" readonly></textarea><div class="acts"><button class="btn" id="cp">📋 Nusxa olish</button></div>');
@@ -429,7 +442,30 @@ function impSheet(){
 }
 function validJ(o){ return o && (o.kind === "in" || o.kind === "out") && o.sum > 0 && o.dt && o.fund != null && o.id != null; }
 function validH(o){ return o && (o.kind === "d" || o.kind === "r") && (o.pay === "naqt" || o.pay === "karta") && o.sum > 0 && o.dt && o.cat && o.id != null; }
+function validK(o){ return o && (o.type === "komp" || o.type === "bar") && (o.pay === "naqt" || o.pay === "karta") && o.sum > 0 && typeof o.dt === "string" && o.id != null; }
+function importKassa(k){
+  var ops = Array.isArray(k.ops) ? k.ops : [], sh = Array.isArray(k.shifts) ? k.shifts : [], pr = Array.isArray(k.products) ? k.products : [], mv = Array.isArray(k.moves) ? k.moves : [];
+  if (!ops.every(validK) || !sh.every(function(s){ return s && s.id != null && typeof s.open_dt === "string" && "open_cash" in s; }) ||
+      !pr.every(function(p){ return p && p.id != null && p.name; }) || !mv.every(function(m){ return m && m.id != null && m.pid != null && typeof m.dt === "string" && typeof m.qty === "number"; })) return null;
+  var c = [0, 0, 0, 0], mk = {}, mm = {};
+  function ids(l){ var r = {}; l.forEach(function(x){ r[x.id] = 1; }); return r; }
+  var i1 = ids(S.k), i2 = ids(S.sh), i3 = ids(S.pr), i4 = ids(S.mv);
+  ops.forEach(function(o){ if (!i1[o.id]){ S.k.push(o); mk[o.dt.slice(0, 7)] = 1; c[0]++; } });
+  sh.forEach(function(x){ if (!i2[x.id]){ S.sh.push(x); c[1]++; } });
+  pr.forEach(function(x){ if (!i3[x.id]){ S.pr.push(x); c[2]++; } });
+  mv.forEach(function(x){ if (!i4[x.id]){ S.mv.push(x); mm[x.dt.slice(0, 7)] = 1; c[3]++; } });
+  if (c[1]) saveSh(); if (c[2]) savePr();
+  Object.keys(mk).forEach(saveK); Object.keys(mm).forEach(saveMv);
+  return { c: c };
+}
 function importData(d){
+  var kres = null, kd = null;
+  if (d && d.kassa && typeof d.kassa === "object") kd = d.kassa;
+  else if (d && !d.jamgarma && !d.hisob && (Array.isArray(d.shifts) || (Array.isArray(d.ops) && d.ops.some(function(o){ return o && o.type; })))) kd = d;
+  if (kd){
+    kres = importKassa(kd); if (!kres) return null;
+    if (!(d.jamgarma || d.hisob)) return kres.c[0] + " kassa yozuvi, " + kres.c[1] + " smena, " + kres.c[2] + " mahsulot, " + kres.c[3] + " ombor harakati";
+  }
   var jf = null, jo = null, ho = null, cats = null;
   if (d && d.jamgarma){ jf = d.jamgarma.funds; jo = d.jamgarma.ops; }
   if (d && d.hisob){ ho = d.hisob.ops; cats = d.hisob.cats; }
@@ -437,7 +473,7 @@ function importData(d){
   else if (d && Array.isArray(d.ops) && !d.jamgarma && !d.hisob){ ho = d.ops; cats = d.cats; }
   var okJ = Array.isArray(jf) && Array.isArray(jo || []) && jf.every(function(f){ return f && f.id != null && f.name; }) && (jo || []).every(validJ);
   var okH = Array.isArray(ho) && ho.every(validH);
-  if (!(okJ && jf) && !okH) return null;
+  if (!(okJ && jf) && !okH) return kres ? "kassa" : null;
   var addF = 0, addJ = 0, addH = 0, mJ = {}, mH = {};
   if (okJ && jf){
     var fid = {}; S.funds.forEach(function(f){ fid[f.id] = 1; });
@@ -451,13 +487,386 @@ function importData(d){
     ["d", "r"].forEach(function(k){ ((cats && cats[k]) || []).concat(ho.filter(function(o){ return o.kind === k; }).map(function(o){ return o.cat; })).forEach(function(c){ if (S.cats[k].indexOf(c) < 0) S.cats[k].push(c); }); });
   }
   saveMeta(); Object.keys(mJ).forEach(function(m){ saveMonth("j", m); }); Object.keys(mH).forEach(function(m){ saveMonth("h", m); });
-  return (addF ? addF + " fond, " : "") + addJ + " jamg'arma va " + addH + " hisob yozuvi";
+  return (addF ? addF + " fond, " : "") + addJ + " jamg'arma va " + addH + " hisob yozuvi" + (kres ? " (+kassa)" : "");
 }
 
+/* ================= KASSA + OMBOR ================= */
+function nowDT(){ var d = new Date(); return iso(d) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+function curShift(){ var o = S.sh.filter(function(s){ return !s.close_dt; }); return o.length ? o[o.length - 1] : null; }
+function smapF(){ var m = {}; S.sh.forEach(function(s){ m[s.id] = s.open_dt.slice(0, 10); }); return m; }
+function opDay(o, m){ return m[o.shift] || o.dt.slice(0, 10); }
+function ksums(l){ var r = { komp: 0, bar: 0, naqt: 0, karta: 0, jami: 0 }; l.forEach(function(o){ r[o.type] += o.sum; r[o.pay] += o.sum; r.jami += o.sum; }); return r; }
+function shiftOps(s){ return S.k.filter(function(o){ return o.shift === s.id; }).sort(function(a, b){ return a.dt < b.dt ? 1 : a.dt > b.dt ? -1 : b.id - a.id; }); }
+function saveSh(){ return saveName("shifts", S.sh); }
+function savePr(){ return saveName("prod", S.pr); }
+function saveK(ym){ return saveName("k_" + ym, S.k.filter(function(o){ return o.dt.slice(0, 7) === ym; })); }
+function saveMv(ym){ return saveName("mv_" + ym, S.mv.filter(function(m){ return m.dt.slice(0, 7) === ym; })); }
+function livePr(){ return S.pr.filter(function(p){ return !p.off; }).sort(function(a, b){ return a.name.localeCompare(b.name); }); }
+function prodById(id){ return S.pr.filter(function(p){ return String(p.id) === String(id); })[0]; }
+function stockMap(){ var r = {}; S.mv.forEach(function(m){ r[m.pid] = (r[m.pid] || 0) + m.qty; }); return r; }
+function addMove(pid, kind, qty, note, extra){
+  var m = { id: newId(), pid: pid, kind: kind, qty: qty, dt: nowDT(), note: note || "" };
+  if (extra) Object.keys(extra).forEach(function(k){ m[k] = extra[k]; });
+  S.mv.push(m); return m;
+}
+function soldStats(mode){
+  var sm = smapF(), today = bizDay(), r = {};
+  S.mv.forEach(function(m){
+    if (m.kind !== "sale") return;
+    var d = sm[m.shift] || m.dt.slice(0, 10);
+    if (mode === "day" && d !== today) return;
+    if (mode === "month" && d.slice(0, 7) !== today.slice(0, 7)) return;
+    var x = r[m.pid] || [0, 0]; x[0] -= m.qty; x[1] -= m.qty * (m.price || 0); r[m.pid] = x;
+  });
+  return r;
+}
+function bizDay(){ var s = curShift(); return s ? s.open_dt.slice(0, 10) : todayISO(); }
+function diffTxt(d){ return d === 0 ? "to'g'ri (farq yo'q)" : fmt(Math.abs(d)) + " so'm " + (d < 0 ? "KAM" : "ORTIQCHA"); }
+
+function kassaView(){
+  var s = curShift(), h = '<h1>MAJOR · KASSA</h1>';
+  if (!s){
+    var last = S.sh.length ? S.sh.slice().sort(function(a, b){ return a.open_dt < b.open_dt ? 1 : -1; })[0] : null;
+    h += '<div class="card"><div class="big neg" style="font-size:22px">● KASSA YOPIQ</div><div class="mut" style="margin-top:6px">Sotuv yozish uchun avval kassani oching.</div></div>' +
+         '<button class="btn grn" data-kc="open">🔓 Kassani ochish</button>';
+    if (last) h += '<button class="btn ghost" data-kc="reopen" style="margin-top:10px">↩ Oxirgi smenani qayta ochish</button>';
+  } else {
+    var list = shiftOps(s), r = ksums(list), exp = s.open_cash + r.naqt;
+    h += '<div class="card"><div class="row"><span class="pos"><b>● KASSA OCHIQ</b> · ' + s.open_dt.slice(11) + ' dan</span><button class="btn red sm" data-kc="close">Yopish</button></div>' +
+      '<div class="mut" style="margin-top:8px">Smena jami</div><div class="big">' + fmt(r.jami) + '</div>' +
+      '<div class="grid2" style="margin-top:10px"><div><span class="mut">🖥 Komp</span><br><b>' + fmt(r.komp) + '</b></div><div><span class="mut">🍹 Bar</span><br><b>' + fmt(r.bar) + '</b></div>' +
+      '<div><span class="mut">💵 Naqt</span><br><b>' + fmt(r.naqt) + '</b></div><div><span class="mut">💳 Karta</span><br><b>' + fmt(r.karta) + '</b></div></div>' +
+      '<div class="mut" style="margin-top:8px">Kassada bo\'lishi kerak: <b style="color:var(--txt)">' + fmt(exp) + '</b></div></div>';
+    h += '<div class="seg" id="skm"><button data-kc="m:prod" class="' + (S.kmode === "prod" ? "on" : "") + '">📦 Mahsulot</button><button data-kc="m:num" class="' + (S.kmode === "num" ? "on" : "") + '">🔢 Summa</button></div>';
+    h += '<div class="seg" style="margin-top:8px"><button data-kc="p:naqt" class="' + (S.kpay === "naqt" ? "on" : "") + '">💵 Naqt</button><button data-kc="p:karta" class="' + (S.kpay === "karta" ? "on" : "") + '">💳 Karta</button></div>';
+    if (S.kmode === "prod") h += '<div id="kprod" style="margin-top:10px">' + kprodHtml() + '</div>';
+    else h += numHtml();
+    h += '<h2>Smena operatsiyalari</h2>';
+    if (!list.length) h += '<div class="empty">Hali yozuv yo\'q</div>';
+    else { h += '<div class="card" style="padding:4px 14px">'; list.slice(0, S.more).forEach(function(o){
+      h += '<div class="op" data-kop="' + o.id + '"><div class="l"><div>' + (o.type === "komp" ? "🖥 Komp" : "🍹 Bar") + ' · ' + (o.pay === "naqt" ? "Naqt" : "Karta") + '</div><div class="mut">' + o.dt.slice(11) + (o.note ? ' · ' + esc(o.note) : '') + '</div></div><b>' + fmt(o.sum) + '</b></div>'; });
+      h += '</div>'; if (list.length > S.more) h += '<button class="btn ghost" id="more">Yana ko\'rsatish</button>'; }
+  }
+  h += krepHtml();
+  return h;
+}
+function numHtml(){
+  return '<div class="card" style="margin-top:10px"><div class="seg"><button data-kc="t:komp" class="' + (S.ktype === "komp" ? "on" : "") + '">🖥 Komp</button><button data-kc="t:bar" class="' + (S.ktype === "bar" ? "on" : "") + '">🍹 Bar</button></div>' +
+    '<label>SUMMA</label><input id="ksum" inputmode="decimal" placeholder="masalan: 25k yoki 25000">' + chipsHtml().replace(/data-chip/g, 'data-kchip') +
+    '<label>IZOH (ixtiyoriy)</label><input id="knote"><div class="acts"><button class="btn" data-kc="addnum">Qo\'shish</button></div></div>';
+}
+function kprodHtml(){
+  var ps = livePr(), st = stockMap();
+  if (!ps.length) return '<div class="card empty">Mahsulot yo\'q. «Ombor» bo\'limidan qo\'shing.</div>';
+  var h = '<div class="pg">';
+  ps.forEach(function(p){
+    var q = S.cart[p.id] || 0, left = st[p.id] || 0;
+    h += '<button class="pt' + (q ? " sel" : "") + '" data-kc="add:' + p.id + '">' + (q ? '<i>×' + q + '</i>' : '') + '<span>' + esc(p.name) + '</span><b>' + fmt(p.price || 0) + '</b><small class="' + (left <= (p.min || 0) ? "neg" : "") + '">qoldi: ' + left + '</small></button>';
+  });
+  h += '</div>';
+  var ids = Object.keys(S.cart);
+  if (ids.length){
+    var total = 0; h += '<div class="card" style="margin-top:10px">';
+    ids.forEach(function(id){ var p = prodById(id), q = S.cart[id]; total += (p.price || 0) * q;
+      h += '<div class="row" style="padding:5px 0"><span>' + esc(p.name) + '</span><span><button class="x" style="color:var(--txt)" data-kc="min:' + id + '">−</button> <b>' + q + '</b> <button class="x" style="color:var(--txt)" data-kc="add:' + id + '">+</button></span><b>' + fmt((p.price || 0) * q) + '</b></div>'; });
+    h += '<div class="row" style="margin-top:8px"><span class="mut">Jami</span><span class="big" style="font-size:24px">' + fmt(total) + '</span></div>' +
+      '<div class="acts"><button class="btn ghost" data-kc="clear">Tozalash</button><button class="btn grn" data-kc="sell">✅ Sotish (' + (S.kpay === "naqt" ? "naqt" : "karta") + ')</button></div></div>';
+  }
+  return h;
+}
+function updCart(){ var e = $("#kprod"); if (e) e.innerHTML = kprodHtml(); }
+
+function krepHtml(){
+  var sm = smapF(), y = +S.km.slice(0, 4), m = +S.km.slice(5, 7) - 1;
+  var list = S.k.filter(function(o){ return opDay(o, sm).slice(0, 7) === S.km; }), by = {};
+  list.forEach(function(o){ var d = opDay(o, sm); (by[d] = by[d] || []).push(o); });
+  var h = '<h2>Hisobot (hisob kuni bo\'yicha)</h2><div class="mon"><button data-kc="pm">‹</button><b>' + MONTHS[m] + ' ' + y + '</b><button data-kc="nm">›</button></div>', t = ksums(list);
+  h += '<div class="card"><div class="mut">Oy jami</div><div class="big">' + fmt(t.jami) + '</div><div class="mut" style="margin-top:6px">🖥 ' + fmt(t.komp) + ' · 🍹 ' + fmt(t.bar) + ' · 💵 ' + fmt(t.naqt) + ' · 💳 ' + fmt(t.karta) + '</div></div>';
+  var days = Object.keys(by).sort().reverse();
+  if (days.length){ h += '<div class="card" style="padding:4px 14px">'; days.forEach(function(d){ var x = ksums(by[d]);
+    h += '<div class="op" style="cursor:default"><div class="l"><div>' + ddmm(d).slice(0, 5) + '</div><div class="mut">🖥 ' + fmt(x.komp) + ' · 🍹 ' + fmt(x.bar) + '</div></div><b>' + fmt(x.jami) + '</b></div>'; }); h += '</div>'; }
+  h += '<h2>Smenalar</h2>';
+  var shs = S.sh.slice().sort(function(a, b){ return a.open_dt < b.open_dt ? 1 : -1; }).slice(0, 15);
+  if (!shs.length) h += '<div class="empty">Smena yo\'q</div>';
+  else { h += '<div class="card" style="padding:4px 14px">'; shs.forEach(function(s){ var r = ksums(shiftOps(s)), tag;
+    if (s.close_dt){ var d = s.close_cash - (s.open_cash + r.naqt); tag = '<span class="' + (d === 0 ? "pos" : "neg") + '">' + (d === 0 ? "✓" : (d > 0 ? "+" : "") + fmt(d)) + '</span>'; } else tag = '<span class="pos">ochiq</span>';
+    h += '<div class="op" data-ksh="' + s.id + '"><div class="l"><div>' + ddmm(s.open_dt.slice(0, 10)).slice(0, 5) + ' ' + s.open_dt.slice(11) + (s.close_dt ? ' – ' + s.close_dt.slice(11) : '') + '</div><div class="mut">Farq: ' + tag + '</div></div><b>' + fmt(r.jami) + '</b></div>'; });
+    h += '</div>'; }
+  return h;
+}
+
+function omborView(){
+  var ps = livePr(), st = stockMap(), sold = soldStats(S.omode), h = '<h1>MAJOR · OMBOR</h1>';
+  var low = ps.filter(function(p){ return (st[p.id] || 0) <= (p.min || 0) && (p.min || 0) > 0; });
+  if (low.length) h += '<div class="banner">⚠️ Tugayapti: ' + low.map(function(p){ return esc(p.name) + ' (' + (st[p.id] || 0) + ')'; }).join(", ") + '</div>';
+  h += '<div class="seg"><button data-om="day" class="' + (S.omode === "day" ? "on" : "") + '">Bugun</button><button data-om="month" class="' + (S.omode === "month" ? "on" : "") + '">Shu oy</button><button data-om="all" class="' + (S.omode === "all" ? "on" : "") + '">Hammasi</button></div>';
+  h += '<div class="grid2" style="margin:10px 0"><button class="btn" data-ob="new">➕ Mahsulot</button><button class="btn ghost" data-ob="recv">📥 Kirim</button></div>';
+  if (!ps.length) return h + '<div class="empty">Mahsulot yo\'q. «➕ Mahsulot» ni bosing.</div>';
+  h += '<div class="card" style="padding:4px 14px">';
+  ps.forEach(function(p){ var q = st[p.id] || 0, so = sold[p.id] || [0, 0];
+    h += '<div class="op" data-prod="' + p.id + '"><div class="l"><div>' + esc(p.name) + '</div><div class="mut">' + fmt(p.price || 0) + ' so\'m · sotildi: ' + so[0] + ' (' + fmt(so[1]) + ')</div></div><b class="' + (q <= (p.min || 0) ? "neg" : "") + '">' + q + '</b></div>'; });
+  return h + '</div><div class="mut">O\'ngdagi raqam - hozir omborda qolgani (dona).</div>';
+}
+
+function numIn(id){ var v = parseInt(String($(id).value).replace(/\s/g, ""), 10); return isFinite(v) ? v : NaN; }
+function prodSheet(id){
+  var p = id ? prodById(id) : null;
+  openSheet('<h3>' + (p ? "Mahsulotni o'zgartirish" : "Yangi mahsulot") + '</h3><label>NOMI</label><input id="pn" value="' + esc(p ? p.name : "") + '">' +
+    '<label>SOTUV NARXI (so\'m)</label><input id="pp" inputmode="numeric" value="' + (p ? p.price || 0 : "") + '">' +
+    '<label>KELISH NARXI (ixtiyoriy)</label><input id="pc" inputmode="numeric" value="' + (p ? p.cost || 0 : "") + '">' +
+    '<label>OGOHLANTIRISH CHEGARASI (dona)</label><input id="pm" inputmode="numeric" value="' + (p ? p.min || 0 : 0) + '">' +
+    (p ? "" : '<label>HOZIRGI QOLDIQ (dona)</label><input id="pq" inputmode="numeric" value="0">') +
+    '<div class="acts"><button class="btn" id="fok">Saqlash</button>' + (p ? '<button class="btn ghost" id="fdel" style="color:var(--red)">🗑 O\'chirish</button>' : '') + '</div>');
+  $("#fok").onclick = function(){
+    var nm = $("#pn").value.trim().slice(0, 40), pr = numIn("#pp") || 0, co = numIn("#pc") || 0, mn = numIn("#pm") || 0, q = p ? 0 : (numIn("#pq") || 0);
+    if (!nm){ toast("Nomini yozing", true); return; }
+    if (S.pr.some(function(x){ return !x.off && x !== p && x.name.toLowerCase() === nm.toLowerCase(); })){ toast("Bunday mahsulot bor", true); return; }
+    if (p){ p.name = nm; p.price = pr; p.cost = co; p.min = mn; savePr(); }
+    else { var np = { id: newId(), name: nm, price: pr, cost: co, min: mn }; S.pr.push(np); savePr(); S.kmode = "prod"; if (q > 0){ addMove(np.id, "in", q, "Boshlang'ich qoldiq"); saveMv(nowDT().slice(0, 7)); } }
+    closeSheet(); render(); toast("Saqlandi");
+  };
+  if (p) twoStep($("#fdel"), function(){ p.off = true; delete S.cart[p.id]; savePr(); closeSheet(); render(); toast("O'chirildi (tarix saqlanadi)"); });
+}
+function recvSheet(pid){
+  var ps = livePr(); if (!ps.length){ toast("Avval mahsulot qo'shing", true); return; }
+  openSheet('<h3>Kirim (omborga qo\'shish)</h3><label>MAHSULOT</label><select id="rp">' + ps.map(function(p){ return '<option value="' + p.id + '"' + (String(p.id) === String(pid) ? " selected" : "") + '>' + esc(p.name) + '</option>'; }).join("") + '</select>' +
+    '<label>NECHTA DONA</label><input id="rq" inputmode="numeric"><label>KELISH NARXI (ixtiyoriy)</label><input id="rc" inputmode="numeric"><label>IZOH</label><input id="rn"><div class="acts"><button class="btn" id="fok">Saqlash</button></div>');
+  $("#fok").onclick = function(){
+    var q = numIn("#rq"), c = numIn("#rc") || 0, p = prodById($("#rp").value);
+    if (!(q > 0)){ toast("Sonini kiriting", true); return; }
+    if (c) p.cost = c, savePr();
+    var ex = c ? { price: c } : null; addMove(p.id, "in", q, $("#rn").value.trim() || "Kirim", ex); saveMv(nowDT().slice(0, 7));
+    closeSheet(); render(); toast(p.name + ": +" + q);
+  };
+}
+function countSheet(pid){
+  var p = prodById(pid), cur = stockMap()[pid] || 0;
+  openSheet('<h3>Sanash: ' + esc(p.name) + '</h3><div class="mut">Hozir tizimda: <b>' + cur + '</b> dona</div><label>HAQIQATDA NECHTA</label><input id="cq" inputmode="numeric"><div class="acts"><button class="btn" id="fok">Saqlash</button></div>');
+  $("#fok").onclick = function(){
+    var a = numIn("#cq"); if (!(a >= 0)){ toast("Sonini kiriting", true); return; }
+    var d = a - cur; if (d){ addMove(pid, "adj", d, "Sanash: " + cur + " → " + a); saveMv(nowDT().slice(0, 7)); }
+    closeSheet(); render(); toast(d ? "To'g'rilandi: " + (d > 0 ? "+" : "") + d : "Farq yo'q");
+  };
+}
+var MVN = { "in": "Kirim", sale: "Sotuv", adj: "Sanash" };
+function histSheet(pid){
+  var p = prodById(pid), ms = S.mv.filter(function(m){ return String(m.pid) === String(pid); }).sort(function(a, b){ return a.dt < b.dt ? 1 : a.dt > b.dt ? -1 : b.id - a.id; }).slice(0, 60);
+  openSheet('<h3>Tarix: ' + esc(p.name) + '</h3>' + (ms.length ? '<div>' + ms.map(function(m){ return '<div class="op" style="cursor:default"><div class="l"><div>' + MVN[m.kind] + '</div><div class="mut">' + ddmm(m.dt.slice(0, 10)).slice(0, 5) + ' ' + m.dt.slice(11) + (m.note ? ' · ' + esc(m.note) : '') + '</div></div><b class="' + (m.qty > 0 ? "pos" : "neg") + '">' + (m.qty > 0 ? "+" : "") + m.qty + '</b></div>'; }).join("") + '</div>' : '<div class="empty">Yo\'q</div>'));
+}
+function prodActSheet(pid){
+  var p = prodById(pid), q = stockMap()[pid] || 0;
+  openSheet('<h3>' + esc(p.name) + '</h3><div class="mut">Narx: ' + fmt(p.price || 0) + ' · omborda: <b style="color:var(--txt)">' + q + '</b> dona</div>' +
+    '<div class="grid2" style="margin-top:14px"><button class="btn" id="a1">📥 Kirim</button><button class="btn ghost" id="a2">🔢 Sanash</button><button class="btn ghost" id="a3">🕘 Tarix</button><button class="btn ghost" id="a4">✏️ O\'zgartirish</button></div>');
+  $("#a1").onclick = function(){ recvSheet(pid); }; $("#a2").onclick = function(){ countSheet(pid); };
+  $("#a3").onclick = function(){ histSheet(pid); }; $("#a4").onclick = function(){ prodSheet(pid); };
+}
+
+function kopSheet(id){
+  var o = S.k.filter(function(x){ return String(x.id) === String(id); })[0]; if (!o) return;
+  var linked = S.mv.some(function(m){ return m.op === o.id; });
+  openSheet('<h3>' + (o.type === "komp" ? "Komp" : "Bar") + ' · ' + fmt(o.sum) + ' so\'m</h3><div class="mut">' + o.dt + ' · ' + (o.pay === "naqt" ? "Naqt" : "Karta") + (o.note ? '<br>' + esc(o.note) : '') + (linked ? '<br>O\'chirsangiz, ombordagi sotuv ham bekor bo\'ladi.' : '') + '</div><div class="acts"><button class="btn ghost" id="fdel" style="color:var(--red)">🗑 O\'chirish</button></div>');
+  twoStep($("#fdel"), function(){
+    var ym = o.dt.slice(0, 7), mm = {}; S.mv.forEach(function(m){ if (m.op === o.id) mm[m.dt.slice(0, 7)] = 1; });
+    S.k = S.k.filter(function(x){ return x !== o; }); S.mv = S.mv.filter(function(m){ return m.op !== o.id; });
+    saveK(ym); Object.keys(mm).forEach(saveMv); closeSheet(); render(); toast("O'chirildi");
+  });
+}
+function openShiftSheet(){
+  var closed = S.sh.filter(function(s){ return s.close_dt; }).sort(function(a, b){ return a.open_dt < b.open_dt ? 1 : -1; }), def = closed.length ? closed[0].close_cash || 0 : 0;
+  openSheet('<h3>Kassani ochish</h3><label>KASSADAGI NAQT PUL (0 ham bo\'ladi)</label><input id="oc" inputmode="decimal" value="' + def + '"><div class="acts"><button class="btn grn" id="fok">🔓 Ochish</button></div>');
+  $("#fok").onclick = function(){
+    var t = $("#oc").value.replace(/\s/g, ""), v = t === "0" ? 0 : parseSum(t); if (t === "" || (v === 0 && t !== "0")){ toast("Summani kiriting", true); return; }
+    S.sh.push({ id: newId(), open_dt: nowDT(), open_cash: v, close_dt: null }); saveSh(); closeSheet(); render(); toast("Kassa ochildi");
+  };
+}
+function closeShiftSheet(){
+  var s = curShift(); if (!s) return; var r = ksums(shiftOps(s)), exp = s.open_cash + r.naqt;
+  openSheet('<h3>Kassani yopish</h3><div class="card"><div class="row"><span class="mut">Boshlang\'ich naqt</span><b>' + fmt(s.open_cash) + '</b></div><div class="row"><span class="mut">Naqt tushum</span><b>' + fmt(r.naqt) + '</b></div><div class="row"><span class="mut">Karta</span><b>' + fmt(r.karta) + '</b></div><div class="row"><span class="mut">Jami</span><b>' + fmt(r.jami) + '</b></div><div class="row" style="margin-top:6px"><span>Kassada bo\'lishi kerak</span><b style="color:var(--gold)">' + fmt(exp) + '</b></div></div>' +
+    '<label>HAQIQIY SANALGAN NAQT</label><input id="cc" inputmode="decimal"><div class="acts"><button class="btn red" id="fok">🔒 Yopish</button></div>');
+  $("#fok").onclick = function(){
+    var t = $("#cc").value.replace(/\s/g, ""), v = t === "0" ? 0 : parseSum(t); if (t === "" || (v === 0 && t !== "0")){ toast("Summani kiriting", true); return; }
+    s.close_dt = nowDT(); s.close_cash = v; s.expected_cash = exp; saveSh(); closeSheet(); render(); toast("Yopildi. Farq: " + diffTxt(v - exp));
+  };
+}
+function shiftSheet(id){
+  var s = S.sh.filter(function(x){ return String(x.id) === String(id); })[0]; if (!s) return;
+  var r = ksums(shiftOps(s)), exp = s.open_cash + r.naqt;
+  openSheet('<h3>Smena hisoboti</h3><div class="card"><div class="mut">Ochilgan: ' + s.open_dt + '<br>Yopilgan: ' + (s.close_dt || "— hali ochiq") + '</div>' +
+    '<div class="row" style="margin-top:8px"><span class="mut">Boshlang\'ich naqt</span><b>' + fmt(s.open_cash) + '</b></div><div class="row"><span class="mut">🖥 Komp</span><b>' + fmt(r.komp) + '</b></div><div class="row"><span class="mut">🍹 Bar</span><b>' + fmt(r.bar) + '</b></div><div class="row"><span class="mut">💵 Naqt</span><b>' + fmt(r.naqt) + '</b></div><div class="row"><span class="mut">💳 Karta</span><b>' + fmt(r.karta) + '</b></div><div class="row"><span>JAMI</span><b style="color:var(--gold)">' + fmt(r.jami) + '</b></div><div class="row"><span class="mut">Bo\'lishi kerak</span><b>' + fmt(exp) + '</b></div>' +
+    (s.close_dt ? '<div class="row"><span class="mut">Sanalgan</span><b>' + fmt(s.close_cash) + '</b></div><div class="row"><span class="mut">Farq</span><b>' + diffTxt(s.close_cash - exp) + '</b></div>' : '') + '</div>');
+}
+function reopenLast(){
+  var last = S.sh.slice().sort(function(a, b){ return a.open_dt < b.open_dt ? 1 : -1; })[0]; if (!last || curShift()) return;
+  last.close_dt = null; delete last.close_cash; delete last.expected_cash; saveSh(); render(); toast("Smena qayta ochildi");
+}
+function doSale(){
+  var s = curShift(); if (!s){ toast("Kassa yopiq", true); return; }
+  var total = 0, parts = [], items = [], st = stockMap(), over = [];
+  Object.keys(S.cart).forEach(function(id){ var p = prodById(id), q = S.cart[id]; if (!p) return; total += (p.price || 0) * q; parts.push(p.name + " ×" + q); items.push([p.id, q, p.price || 0]); if ((st[p.id] || 0) < q) over.push(p.name); });
+  if (!items.length) return;
+  if (total <= 0){ toast("Narx 0. Mahsulot narxini kiriting.", true); return; }
+  var now = nowDT(), op = { id: newId(), shift: s.id, dt: now, type: "bar", pay: S.kpay, sum: total, note: parts.join(", ") };
+  S.k.push(op); items.forEach(function(x){ addMove(x[0], "sale", -x[1], "", { shift: s.id, op: op.id, price: x[2], dt: now }); });
+  S.cart = {}; saveK(now.slice(0, 7)); saveMv(now.slice(0, 7)); render();
+  if (over.length) toast("Sotildi: " + fmt(total) + ". Diqqat, omborda yetmagan: " + over.join(", "), true); else toast("✅ Sotildi: " + fmt(total) + " so'm");
+}
+function kassaClick(t){
+  if (cloudClick(t)) return true;
+  var kc = t.dataset.kc;
+  if (kc){
+    var a = kc.split(":"), c = a[0], v = a[1];
+    if (c === "open") openShiftSheet();
+    else if (c === "close") closeShiftSheet();
+    else if (c === "reopen") reopenLast();
+    else if (c === "m"){ S.kmode = v; render(); }
+    else if (c === "p"){ S.kpay = v; if (S.kmode === "prod"){ [].forEach.call(document.querySelectorAll('[data-kc^="p:"]'), function(b){ b.classList.toggle("on", b.dataset.kc === kc); }); updCart(); } else render(); }
+    else if (c === "t"){ S.ktype = v; [].forEach.call(document.querySelectorAll('[data-kc^="t:"]'), function(b){ b.classList.toggle("on", b.dataset.kc === kc); }); }
+    else if (c === "add"){ S.cart[v] = (S.cart[v] || 0) + 1; updCart(); }
+    else if (c === "min"){ if (S.cart[v] > 1) S.cart[v]--; else delete S.cart[v]; updCart(); }
+    else if (c === "clear"){ S.cart = {}; updCart(); }
+    else if (c === "sell") doSale();
+    else if (c === "addnum"){
+      var s = curShift(), sum = parseSum($("#ksum").value); if (!s){ toast("Kassa yopiq", true); return true; } if (!sum){ toast("Summani to'g'ri kiriting", true); return true; }
+      var now = nowDT(); S.k.push({ id: newId(), shift: s.id, dt: now, type: S.ktype, pay: S.kpay, sum: sum, note: $("#knote").value.trim() }); saveK(now.slice(0, 7)); render(); toast("Qo'shildi: " + fmt(sum));
+    }
+    else if (c === "pm" || c === "nm"){ var y = +S.km.slice(0, 4), m = +S.km.slice(5, 7) - 1 + (c === "pm" ? -1 : 1), d = new Date(y, m, 1); S.km = d.getFullYear() + "-" + pad(d.getMonth() + 1); render(); }
+    return true;
+  }
+  if (t.dataset.kchip){ var i = $("#ksum"); i.value = String((parseSum(i.value) || 0) + +t.dataset.kchip); return true; }
+  if (t.dataset.kop){ kopSheet(t.dataset.kop); return true; }
+  if (t.dataset.ksh){ shiftSheet(t.dataset.ksh); return true; }
+  if (t.dataset.om){ S.omode = t.dataset.om; render(); return true; }
+  if (t.dataset.ob){ if (t.dataset.ob === "new") prodSheet(null); else recvSheet(null); return true; }
+  if (t.dataset.prod){ prodActSheet(t.dataset.prod); return true; }
+  return false;
+}
+
+/* ================= BULUT (Firebase) — telefon + kompyuter bir baza ================= */
+var CLOUD = "https://major-c0b42-default-rtdb.firebaseio.com";
+var CK = "", REV = { kassa: 0, jam: 0, hisob: 0 }, SYNCED = {}, DIRTY = {}, pushing = false, lastOk = "", cloudErr = "", pushT;
+var DOCS = ["kassa", "jam", "hisob"];
+function cloudDirty(name){
+  if (!CK) return;
+  var d = name === "meta" ? ["jam", "hisob"] : /^j_/.test(name) ? ["jam"] : /^h_/.test(name) ? ["hisob"] : ["kassa"];
+  d.forEach(function(x){ DIRTY[x] = 1; }); schedulePush();
+}
+function docData(n){
+  if (n === "kassa") return { ops: S.k, shifts: S.sh, products: S.pr, moves: S.mv };
+  if (n === "hisob") return { ops: S.h, cats: S.cats };
+  return { funds: S.funds, ops: S.j };
+}
+function applyDoc(n, d){
+  d = d || {};
+  if (n === "kassa"){ S.k = d.ops || []; S.sh = d.shifts || []; S.pr = d.products || []; S.mv = d.moves || []; }
+  else if (n === "hisob"){ S.h = d.ops || []; if (d.cats && d.cats.d && d.cats.r) S.cats = d.cats; }
+  else { S.funds = d.funds || []; S.j = d.ops || []; }
+}
+function uni(a, b){ var seen = {}, r = []; (b || []).forEach(function(x){ seen[x.id] = 1; r.push(x); }); (a || []).forEach(function(x){ if (!seen[x.id]) r.push(x); }); return r; }
+function mergeInto(n, rd){
+  rd = rd || {}; var ld = docData(n), m;
+  if (n === "kassa") m = { ops: uni(ld.ops, rd.ops), shifts: uni(ld.shifts, rd.shifts), products: uni(ld.products, rd.products), moves: uni(ld.moves, rd.moves) };
+  else if (n === "hisob"){
+    var c = { d: ((rd.cats && rd.cats.d) || []).slice(), r: ((rd.cats && rd.cats.r) || []).slice() };
+    ["d", "r"].forEach(function(k){ (ld.cats[k] || []).forEach(function(x){ if (c[k].indexOf(x) < 0) c[k].push(x); }); });
+    m = { ops: uni(ld.ops, rd.ops), cats: c };
+  } else {
+    var funds = (rd.funds || []).slice(), ids = {}, names = {}, remap = {};
+    funds.forEach(function(f){ ids[f.id] = 1; names[String(f.name).trim().toLowerCase()] = f.id; });
+    ld.funds.forEach(function(f){ if (ids[f.id]) return; var nm = String(f.name).trim().toLowerCase(); if (names[nm] != null) remap[f.id] = names[nm]; else { funds.push(f); ids[f.id] = 1; } });
+    var lops = ld.ops.map(function(o){ if (remap[o.fund] != null){ var c2 = {}; Object.keys(o).forEach(function(k){ c2[k] = o[k]; }); c2.fund = remap[o.fund]; return c2; } return o; });
+    m = { funds: funds, ops: uni(lops, rd.ops) };
+  }
+  applyDoc(n, m);
+}
+function cfetch(path, opt){
+  return fetch(CLOUD + "/" + CK + "/" + path + ".json", Object.assign({ cache: "no-store" }, opt || {})).then(function(r){ if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+}
+function pullDoc(n){ return cfetch(n).then(function(v){ if (!v || !v.json) return null; return { rev: v.rev || 0, data: JSON.parse(v.json) }; }); }
+function pushDoc(n){
+  return cfetch(n + "/rev").then(function(rr){
+    if (rr != null && rr !== REV[n]) return pullDoc(n).then(function(v){ if (v){ mergeInto(n, v.data); REV[n] = v.rev; } });
+  }).then(function(){
+    var rev = Math.max(Date.now(), REV[n] + 1);
+    return cfetch(n, { method: "PUT", body: JSON.stringify({ rev: rev, json: JSON.stringify(docData(n)) }) }).then(function(){ REV[n] = rev; SYNCED[n] = 1; saveRevs(); });
+  });
+}
+function setStat(ok, e){ if (ok){ var d = new Date(); lastOk = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); cloudErr = ""; } else cloudErr = e ? String(e.message || e) : "xato"; var el = $("#cstat"); if (el) el.innerHTML = cstatHtml(); }
+function schedulePush(){ clearTimeout(pushT); pushT = setTimeout(flush, 700); }
+function flush(){
+  if (!CK) return;
+  if (pushing){ schedulePush(); return; }
+  var names = DOCS.filter(function(n){ return DIRTY[n]; }); if (!names.length) return;
+  pushing = true; var p = Promise.resolve();
+  names.forEach(function(n){ p = p.then(function(){ delete DIRTY[n]; return pushDoc(n); }); });
+  p.then(function(){ setStat(true); if (!sheetOpen()) render(); }, function(e){ names.forEach(function(n){ DIRTY[n] = 1; }); setStat(false, e); setTimeout(schedulePush, 6000); })
+   .then(function(){ pushing = false; });
+}
+function saveRevs(){ try { store.set("cfgrev", JSON.stringify({ rev: REV, sy: SYNCED })); } catch(e){} }
+function loadCfg(){
+  return store.get(["cfg", "cfgrev"]).then(function(v){
+    CK = (v.cfg || "").trim();
+    try { var r = JSON.parse(v.cfgrev || "{}"); if (r.rev) REV = Object.assign(REV, r.rev); if (r.sy) SYNCED = r.sy; } catch(e){}
+  }, function(){});
+}
+function connect(){
+  return Promise.all(DOCS.map(function(n){ return pullDoc(n).then(function(v){ return { n: n, v: v }; }); })).then(function(rs){
+    rs.forEach(function(x){
+      if (x.v){
+        if (SYNCED[x.n]) applyDoc(x.n, x.v.data); else { mergeInto(x.n, x.v.data); DIRTY[x.n] = 1; }
+        REV[x.n] = x.v.rev; SYNCED[x.n] = 1;
+      } else DIRTY[x.n] = 1;
+    });
+    saveRevs(); ensureDefaults(); S.kmode = livePr().length ? "prod" : "num"; setStat(true); schedulePush();
+  });
+}
+function poll(){
+  if (!CK || pushing || document.hidden || !S.ready) return;
+  if (Object.keys(DIRTY).length){ schedulePush(); return; }
+  Promise.all(DOCS.map(function(n){ return cfetch(n + "/rev").then(function(r){ return [n, r]; }); })).then(function(res){
+    setStat(true);
+    var ch = res.filter(function(x){ return x[1] != null && x[1] !== REV[x[0]] && SYNCED[x[0]]; });
+    if (!ch.length || sheetOpen() || pushing || Object.keys(DIRTY).length) return;
+    return Promise.all(ch.map(function(x){ return pullDoc(x[0]); })).then(function(vs){
+      vs.forEach(function(v, i){ if (v){ applyDoc(ch[i][0], v.data); REV[ch[i][0]] = v.rev; } });
+      saveRevs(); render();
+    });
+  }).catch(function(e){ setStat(false, e); });
+}
+setInterval(poll, 5000);
+document.addEventListener("visibilitychange", function(){ if (!document.hidden) poll(); });
+function ensureDefaults(){
+  if (!S.funds.length && !S.j.length){
+    S.funds = ["Kredit", "Svet (elektr)", "Uy", "Nalog"].map(function(n, i){ return { id: newId() + i, name: n, target: 0, day: 1 }; });
+    saveMeta();
+  }
+}
+function cstatHtml(){
+  if (!CK) return '<span class="neg">● Ulanmagan</span>';
+  if (cloudErr) return '<span class="neg">● Aloqa yo\'q (' + esc(cloudErr) + ')</span>';
+  return '<span class="pos">● Ulangan</span>' + (lastOk ? ' <span class="mut">· ' + lastOk + '</span>' : '');
+}
+function cloudSettings(){
+  var h = '<h2>Bulut (telefon + kompyuter)</h2><div class="card"><div id="cstat">' + cstatHtml() + '</div>';
+  if (!CK) h += '<div class="mut" style="margin:8px 0">Kalitni kiriting: shunda telefon va kompyuterdagi dasturlar bir xil ma\'lumotni ko\'radi.</div><input id="ckey" placeholder="mj-...." autocapitalize="off" autocorrect="off"><div class="acts"><button class="btn" data-cl="set">Ulash</button></div>';
+  else h += '<div class="mut" style="margin:8px 0">Har o\'zgarish bulutga yoziladi, kompyuterdagi «major_sync» dasturi uni fayllarga tushiradi.</div><div class="grid2"><button class="btn ghost" data-cl="sync">🔄 Hozir tekshirish</button><button class="btn ghost" data-cl="off">Uzish</button></div>';
+  return h + '</div>';
+}
+function cloudClick(t){
+  var c = t.dataset.cl; if (!c) return false;
+  if (c === "set"){
+    var k = $("#ckey").value.trim();
+    if (!/^[A-Za-z0-9_-]{8,64}$/.test(k)){ toast("Kalit noto'g'ri yozilgan", true); return true; }
+    CK = k; store.set("cfg", k); toast("Ulanmoqda…");
+    connect().then(function(){ render(); toast("✅ Bulutga ulandi"); }, function(e){ setStat(false, e); render(); toast("Ulanmadi: " + (e.message || e), true); });
+  } else if (c === "sync"){ poll(); schedulePush(); toast("Tekshirilmoqda…"); }
+  else if (c === "off"){ CK = ""; store.set("cfg", ""); SYNCED = {}; DIRTY = {}; saveRevs(); render(); toast("Bulut uzildi"); }
+  return true;
+}
 /* ================= hodisalar ================= */
 document.addEventListener("click", function(e){
-  var t = e.target.closest("button,[data-fund],[data-jop],[data-hop]"); if (!t) return;
+  var t = e.target.closest("button,[data-fund],[data-jop],[data-hop],[data-kop],[data-ksh],[data-prod]"); if (!t) return;
   if (t.closest("nav")){ S.tab = t.dataset.t; S.fund = null; S.more = 40; closeSheet(); render(); window.scrollTo(0, 0); return; }
+  if (kassaClick(t)) return;
   if (t.dataset.fund){ S.fund = t.dataset.fund; S.more = 40; render(); window.scrollTo(0, 0); }
   else if (t.id === "back"){ S.fund = null; render(); }
   else if (t.id === "newFund") fundSheet(null);
@@ -484,7 +893,14 @@ function syncBack(){
 if (tg && tg.BackButton){ try { tg.BackButton.onClick(function(){ if (sheetOpen()) closeSheet(); else if (S.fund){ S.fund = null; render(); } }); } catch(e){} }
 
 render();
-loadState().then(render, function(){ S.ready = true; render(); toast("Ma'lumotni o'qib bo'lmadi. Qayta oching.", true); });
+function boot(){
+  loadCfg().then(loadState).then(function(){
+    S.ready = true; render();
+    if (CK) return connect().then(function(){ render(); }, function(e){ setStat(false, e); toast("Bulutga ulanib bo'lmadi, telefondagi nusxa ko'rsatilmoqda", true); });
+    ensureDefaults(); render();
+  }, function(){ S.ready = true; ensureDefaults(); render(); toast("Ma'lumotni o'qib bo'lmadi. Qayta oching.", true); });
+}
+boot();
 window.__S = S; window.__imp = importData;
 })();
 </script>
