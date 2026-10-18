@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>MAJOR</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#0e1013;--p:#171a21;--p2:#1f232c;--line:#2b303b;--gold:#f2b705;--gold2:#b98f00;--txt:#ece8dd;--mut:#8c909a;--red:#e5484d;--grn:#3fb950}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+body{padding:0 14px calc(84px + env(safe-area-inset-bottom));min-height:100vh}
+h1{font-size:13px;letter-spacing:.18em;color:var(--gold);margin:16px 0 12px;font-weight:700}
+h2{font-size:12px;letter-spacing:.12em;color:var(--mut);text-transform:uppercase;margin:20px 0 8px;font-weight:600}
+.card{background:var(--p);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.big{font-size:30px;font-weight:800;color:var(--gold);line-height:1.1}
+.mut{color:var(--mut);font-size:13px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--p);border:1px solid var(--line);border-radius:12px;padding:12px}
+.tile b{display:block;font-size:19px;margin-top:2px}
+.bar{height:8px;background:var(--p2);border-radius:6px;overflow:hidden;margin:8px 0 6px}
+.bar i{display:block;height:100%;background:var(--gold);border-radius:6px}
+.bar i.ok{background:var(--grn)}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+.btn{background:var(--gold);color:#16130a;font-weight:700;border-radius:12px;padding:13px 14px;width:100%}
+.btn.ghost{background:var(--p2);color:var(--txt);border:1px solid var(--line)}
+.btn.red{background:var(--red);color:#fff}
+.btn.grn{background:var(--grn);color:#08140b}
+.btn.sm{padding:8px 12px;font-size:14px;width:auto}
+.fund{cursor:pointer}
+.fund .nm{font-weight:700;font-size:17px}
+.fund .sm{font-size:13px;color:var(--mut)}
+.pos{color:var(--grn)}.neg{color:var(--red)}
+.op{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.op:last-child{border:0}
+.op .l{min-width:0}.op .l div:first-child{font-weight:600}
+.op .l .mut{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.op b{white-space:nowrap}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--p);border-top:1px solid var(--line);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
+nav button{flex:1;background:none;padding:8px 2px;color:var(--mut);font-size:11px;border-radius:10px}
+nav button span{display:block;font-size:20px;line-height:1.1}
+nav button.on{color:var(--gold)}
+.seg{display:flex;background:var(--p2);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;padding:10px;border-radius:10px;background:none;color:var(--mut);font-weight:600}
+.seg button.on{background:var(--gold);color:#16130a}
+.seg button.on.r{background:var(--red);color:#fff}
+.back{background:none;color:var(--gold);padding:8px 0;font-size:15px}
+.mon{display:flex;align-items:center;justify-content:space-between;margin:6px 0 12px}
+.mon button{background:var(--p2);border-radius:10px;width:42px;height:38px;color:var(--gold);font-size:20px}
+.mon b{font-size:17px}
+/* sheet */
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;display:none}
+#ov.on{display:block}
+#sheet{position:fixed;left:0;right:0;bottom:0;background:var(--p);border-radius:18px 18px 0 0;border-top:1px solid var(--line);padding:16px 14px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto;z-index:21;display:none}
+#sheet.on{display:block}
+#sheet h3{margin:0 0 12px;font-size:18px}
+label{display:block;font-size:12px;color:var(--mut);margin:12px 0 5px;letter-spacing:.05em}
+input,select,textarea{width:100%;background:var(--p2);border:1px solid var(--line);border-radius:12px;color:var(--txt);padding:12px;font:inherit;font-size:16px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.chips{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.chips button{background:var(--p2);border:1px solid var(--line);border-radius:10px;padding:8px 0;color:var(--gold);font-size:13px;font-weight:600}
+.acts{display:flex;gap:10px;margin-top:16px}
+#toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--p2);border:1px solid var(--gold);color:var(--txt);padding:10px 16px;border-radius:12px;z-index:50;display:none;max-width:90%;text-align:center;font-size:14px}
+#toast.bad{border-color:var(--red)}
+.banner{background:#2a2410;border:1px solid var(--gold2);color:var(--gold);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+.empty{color:var(--mut);text-align:center;padding:22px 0}
+.cat{display:flex;justify-content:space-between;padding:6px 0;font-size:15px}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pt{position:relative;background:var(--p);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center;min-height:86px;display:flex;flex-direction:column;justify-content:center;gap:2px;color:var(--txt)}
+.pt span{font-weight:600;font-size:14px;line-height:1.15}.pt b{color:var(--gold);font-size:13px}.pt small{font-size:11px;color:var(--mut)}
+.pt.sel{border-color:var(--gold);background:#2a2410}.pt i{position:absolute;top:4px;right:6px;font-style:normal;font-weight:800;color:var(--gold);font-size:14px}
+.x{background:var(--p2);border-radius:8px;padding:4px 10px;color:var(--red);font-size:14px}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="app"></div>
+<nav id="nav">
+  <button data-t="k" class="on"><span>💰</span>Kassa</button>
+  <button data-t="o"><span>📦</span>Ombor</button>
+  <button data-t="j"><span>🏦</span>Jamg'arma</button>
+  <button data-t="h"><span>📒</span>Hisob</button>
+  <button data-t="s"><span>⚙️</span>Sozlamalar</button>
+</nav>
+<div id="ov"></div>
+<div id="sheet"></div>
+
+<script>
+(function(){
+"use strict";
+/* ================= Telegram + saqlash ================= */
+var tg = window.Telegram && window.Telegram.WebApp;
+var inTg = !!(tg && tg.initData && tg.CloudStorage && (!tg.isVersionAtLeast || tg.isVersionAtLeast("6.9")));
+try { if (tg){ tg.ready(); tg.expand(); tg.setHeaderColor("#0e1013"); tg.setBackgroundColor("#0e1013");
+  if (tg.disableVerticalSwipes) tg.disableVerticalSwipes(); } } catch(e){}
+
+var CHUNK = 3000;
+function cs(method){ var a = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function(res, rej){ a.push(function(err, v){ err ? rej(new Error(String(err))) : res(v); }); tg.CloudStorage[method].apply(tg.CloudStorage, a); }); }
+var store = inTg ? {
+  keys: function(){ return cs("getKeys"); },
+  get: function(keys){ return keys.length ? cs("getItems", keys) : Promise.resolve({}); },
+  set: function(k, v){ return cs("setItem", k, v); },
+  del: function(keys){ return keys.length ? cs("removeItems", keys) : Promise.resolve(); }
+} : {
+  keys: function(){ var r = []; try { for (var i = 0; i < localStorage.length; i++){ var k = localStorage.key(i); if (k.indexOf("major_") === 0) r.push(k.slice(6)); } } catch(e){} return Promise.resolve(r); },
+  get: function(keys){ var o = {}; keys.forEach(function(k){ try { o[k] = localStorage.getItem("major_" + k) || ""; } catch(e){ o[k] = ""; } }); return Promise.resolve(o); },
+  set: function(k, v){ try { localStorage.setItem("major_" + k, v); return Promise.resolve(); } catch(e){ return Promise.reject(e); } },
+  del: function(keys){ try { keys.forEach(function(k){ localStorage.removeItem("major_" + k); }); } catch(e){} return Promise.resolve(); }
+};
+
+var CNT = {};   // nom -> hozirgi bo'laklar soni
+var queue = Promise.resolve();
+function saveName(name, obj){   // bo'laklab saqlash (Telegram: 1 qiymat <= 4096 belgi)
+  queue = queue.then(function(){
+    var empty = (Array.isArray(obj) && !obj.length);
+    var s = empty ? "" : JSON.stringify(obj), n = empty ? 0 : Math.ceil(s.length / CHUNK), old = CNT[name] || 0, p = [];
+    for (var i = 0; i < n; i++) p.push(store.set(name + "_c" + i, s.slice(i * CHUNK, (i + 1) * CHUNK)));
+    return Promise.all(p).then(function(){
+      if (n) return store.set(name + "_n", String(n));
+      return store.del([name + "_n"]);
+    }).then(function(){
+      var rm = []; for (var j = n; j < old; j++) rm.push(name + "_c" + j);
+      CNT[name] = n; return store.del(rm);
+    });
+  }).catch(function(e){ toast("Saqlanmadi! Internetni tekshiring va qayta urining.", true); throw e; });
+  return queue;
+}
+function loadAll(){
+  return store.keys().then(function(keys){
+    var names = keys.filter(function(k){ return /_n$/.test(k); }).map(function(k){ return k.slice(0, -2); });
+    return store.get(keys).then(function(v){
+      var out = {};
+      names.forEach(function(nm){
+        var n = parseInt(v[nm + "_n"], 10) || 0, s = "";
+        for (var i = 0; i < n; i++) s += (v[nm + "_c" + i] || "");
+        CNT[nm] = n;
+        try { out[nm] = JSON.parse(s); } catch(e){ out[nm] = null; }
+      });
+      return out;
+    });
+  });
+}
+
+/* ================= yordamchilar ================= */
+var $ = function(s, r){ return (r || document).querySelector(s); };
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function fmt(n){ n = Math.round(n || 0); var neg = n < 0; var s = String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " "); return (neg ? "−" : "") + s; }
+function pad(n){ return (n < 10 ? "0" : "") + n; }
+function iso(d){ return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+function todayISO(){ return iso(new Date()); }
+var lastId = 0;
+function newId(){ var v = Date.now() * 1000 + Math.floor(Math.random() * 1000); if (v <= lastId) v = lastId + 1; lastId = v; return v; }
+function parseSum(s){
+  s = String(s).toLowerCase().replace(/\s/g, "").replace(",", ".");
+  var m = 1; if (/k$/.test(s)){ m = 1000; s = s.slice(0, -1); } else if (/m$/.test(s)){ m = 1000000; s = s.slice(0, -1); }
+  var v = Math.round(parseFloat(s) * m);
+  return (isFinite(v) && v > 0) ? v : 0;
+}
+var MONTHS = ["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentyabr","Oktyabr","Noyabr","Dekabr"];
+var toastT;
+function toast(m, bad){ var t = $("#toast"); t.textContent = m; t.className = bad ? "bad" : ""; t.style.display = "block"; clearTimeout(toastT); toastT = setTimeout(function(){ t.style.display = "none"; }, bad ? 4500 : 2000); }
+
+/* ================= ma'lumot ================= */
+var DEF_CATS = { d: ["Komp puli","Bar puli","Boshqa daromad"], r: ["Ijara","Elektr energiya","Internet","Kredit to'lovi","Soliq","Oylik maosh","Bar uchun tovar","Ta'mirlash","Reklama","Boshqa rasxod"] };
+var S = { funds: [], j: [], h: [], cats: { d: DEF_CATS.d.slice(), r: DEF_CATS.r.slice() }, tab: "k", fund: null, hm: todayISO().slice(0, 7), ready: false, more: 40,
+  k: [], sh: [], pr: [], mv: [], cart: {}, kmode: "prod", kpay: "naqt", ktype: "komp", omode: "day", km: todayISO().slice(0, 7) };
+
+function monthsOf(list){ var m = {}; list.forEach(function(o){ m[o.dt.slice(0, 7)] = 1; }); return Object.keys(m); }
+function saveMeta(){ return saveName("meta", { funds: S.funds, cats: S.cats }); }
+function saveMonth(kind, ym){
+  var list = S[kind].filter(function(o){ return o.dt.slice(0, 7) === ym; });
+  return saveName(kind + "_" + ym, list);
+}
+function loadState(){
+  return loadAll().then(function(all){
+    Object.keys(all).forEach(function(nm){
+      var v = all[nm]; if (!v) return;
+      if (nm === "meta"){ S.funds = v.funds || []; if (v.cats && v.cats.d && v.cats.r) S.cats = v.cats; }
+      else if (/^j_\d{4}-\d{2}$/.test(nm)) S.j = S.j.concat(v);
+      else if (/^h_\d{4}-\d{2}$/.test(nm)) S.h = S.h.concat(v);
+      else if (nm === "shifts") S.sh = v;
+      else if (nm === "prod") S.pr = v;
+      else if (/^k_\d{4}-\d{2}$/.test(nm)) S.k = S.k.concat(v);
+      else if (/^mv_\d{4}-\d{2}$/.test(nm)) S.mv = S.mv.concat(v);
+    });
+    if (!S.funds.length && !S.j.length){
+      S.funds = ["Kredit","Svet (elektr)","Uy","Nalog"].map(function(n, i){ return { id: newId() + i, name: n, target: 0, day: 1 }; });
+      saveMeta();
+    }
+    if (!livePr().length) S.kmode = "num";
+    S.ready = true;
+  });
+}
+
+/* ================= jamg'arma hisobi ================= */
+function dim(y, m){ return new Date(y, m + 1, 0).getDate(); }
+function nextDue(day, t){
+  var y = t.getFullYear(), m = t.getMonth(), d = Math.min(day, dim(y, m));
+  if (t.getDate() <= d) return new Date(y, m, d);
+  var y2 = m === 11 ? y + 1 : y, m2 = (m + 1) % 12;
+  return new Date(y2, m2, Math.min(day, dim(y2, m2)));
+}
+function fstats(f){
+  var t = new Date(); t = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  var ops = S.j.filter(function(o){ return String(o.fund) === String(f.id); });
+  var bal = ops.reduce(function(a, o){ return a + (o.kind === "in" ? o.sum : -o.sum); }, 0);
+  var r = { bal: bal, target: f.target || 0, need: 0, perDay: 0, days: null, due: null, pct: 0 };
+  if (r.target > 0){
+    var day = f.day || 1, due = nextDue(day, t), mk = iso(t).slice(0, 7);
+    var paid = ops.filter(function(o){ return o.kind === "out" && o.dt.slice(0, 7) === mk; }).reduce(function(a, o){ return a + o.sum; }, 0);
+    if (due.getMonth() === t.getMonth() && due.getFullYear() === t.getFullYear() && paid >= r.target){
+      var y2 = t.getMonth() === 11 ? t.getFullYear() + 1 : t.getFullYear(), m2 = (t.getMonth() + 1) % 12;
+      due = new Date(y2, m2, Math.min(day, dim(y2, m2)));
+    }
+    r.due = due; r.days = Math.round((due - t) / 86400000);
+    r.need = Math.max(0, r.target - bal);
+    r.perDay = r.need ? Math.ceil(r.need / Math.max(1, r.days)) : 0;
+    r.pct = Math.max(0, Math.min(100, bal * 100 / r.target));
+  }
+  return r;
+}
+function ddmm(s){ return s.slice(8, 10) + "." + s.slice(5, 7) + "." + s.slice(0, 4); }
+
+/* ================= ekranlar ================= */
+function render(){
+  var a = $("#app");
+  if (!S.ready){ a.innerHTML = '<h1>MAJOR</h1><div class="empty">Yuklanmoqda…</div>'; return; }
+  [].forEach.call(document.querySelectorAll("nav button"), function(b){ b.classList.toggle("on", b.dataset.t === S.tab); });
+  var banner = inTg ? "" : '<div class="banner">Telegram tashqarisida ochildi: ma\'lumot faqat shu brauzerda saqlanadi.</div>';
+  if (S.tab === "k") a.innerHTML = banner + kassaView();
+  else if (S.tab === "o") a.innerHTML = banner + omborView();
+  else if (S.tab === "j") a.innerHTML = banner + (S.fund ? fundView() : jamView());
+  else if (S.tab === "h") a.innerHTML = banner + hisobView();
+  else a.innerHTML = banner + settingsView();
+  syncBack();
+}
+
+function jamView(){
+  var st = S.funds.map(function(f){ return { f: f, s: fstats(f) }; });
+  var total = st.reduce(function(a, x){ return a + x.s.bal; }, 0);
+  var need = 0, per = 0, has = false;
+  st.forEach(function(x){ if (x.s.target > 0){ has = true; need += x.s.need; per += x.s.perDay; } });
+  var h = '<h1>MAJOR · JAMG\'ARMA</h1><div class="card"><div class="mut">Jami jamg\'arilgan</div><div class="big">' + fmt(total) + ' <span style="font-size:15px">so\'m</span></div>';
+  if (has) h += need > 0 ? '<div class="mut" style="margin-top:8px">Hali yetmayapti: <b style="color:var(--txt)">' + fmt(need) + '</b> · hammasi uchun kuniga <b style="color:var(--gold)">' + fmt(per) + '</b></div>' : '<div class="pos" style="margin-top:8px">✅ Hamma to\'lovlar uchun pul yetarli</div>';
+  h += '</div>';
+  st.forEach(function(x){
+    var f = x.f, s = x.s;
+    h += '<div class="card fund" data-fund="' + f.id + '"><div class="row"><span class="nm">' + esc(f.name) + '</span><b>' + fmt(s.bal) + '</b></div>';
+    if (s.target > 0){
+      h += '<div class="bar"><i class="' + (s.need ? "" : "ok") + '" style="width:' + s.pct + '%"></i></div><div class="sm">' +
+        (s.need ? '⏳ ' + s.days + ' kun qoldi · kuniga <b style="color:var(--gold)">' + fmt(s.perDay) + '</b>' : '✅ Yetarli') + ' · kerak: ' + fmt(s.target) + '</div>';
+    } else h += '<div class="sm">Oylik summa kiritilmagan</div>';
+    h += '</div>';
+  });
+  return h + '<button class="btn ghost" id="newFund">➕ Yangi fond</button>';
+}
+function fundById(id){ return S.funds.filter(function(f){ return String(f.id) === String(id); })[0]; }
+function fundView(){
+  var f = fundById(S.fund); if (!f){ S.fund = null; return jamView(); }
+  var s = fstats(f);
+  var h = '<button class="back" id="back">‹ Orqaga</button><div class="row"><h1 style="margin:6px 0">' + esc(f.name).toUpperCase() + '</h1><button class="btn ghost sm" id="fset">⚙</button></div>';
+  h += '<div class="card"><div class="mut">Jamg\'arilgan</div><div class="big">' + fmt(s.bal) + '</div>';
+  if (s.target > 0){
+    h += '<div class="bar"><i class="' + (s.need ? "" : "ok") + '" style="width:' + s.pct + '%"></i></div>' +
+      '<div class="mut">Oylik to\'lov: ' + fmt(s.target) + ' · har oyning ' + (f.day || 1) + '-kuni</div>' +
+      '<div class="mut">Keyingi: ' + ddmm(iso(s.due)) + ' (' + s.days + ' kun)</div>' +
+      (s.need ? '<div style="margin-top:6px">⚠️ Yetmayapti: <b>' + fmt(s.need) + '</b><br>📅 Kuniga: <b style="color:var(--gold)">' + fmt(s.perDay) + ' so\'m</b></div>' : '<div class="pos" style="margin-top:6px">✅ Pul yetarli</div>');
+  } else h += '<div class="mut" style="margin-top:6px">Oylik summa kiritilmagan - ⚙ dan kiriting</div>';
+  h += '</div><div class="grid2"><button class="btn grn" data-op="in">➕ Qo\'shish</button><button class="btn red" data-op="out">➖ To\'landi</button></div><h2>Tarix</h2>';
+  var ops = S.j.filter(function(o){ return String(o.fund) === String(f.id); }).sort(function(a, b){ return a.dt < b.dt ? 1 : a.dt > b.dt ? -1 : b.id - a.id; });
+  if (!ops.length) h += '<div class="empty">Hozircha yozuv yo\'q</div>';
+  h += '<div class="card" style="padding:4px 14px">';
+  ops.slice(0, S.more).forEach(function(o){
+    h += '<div class="op" data-jop="' + o.id + '"><div class="l"><div>' + ddmm(o.dt) + '</div><div class="mut">' + esc(o.note || (o.kind === "in" ? "Qo'shildi" : "To'landi")) + '</div></div><b class="' + (o.kind === "in" ? "pos" : "neg") + '">' + (o.kind === "in" ? "+" : "−") + fmt(o.sum) + '</b></div>';
+  });
+  h += '</div>';
+  if (ops.length > S.more) h += '<button class="btn ghost" id="more">Yana ko\'rsatish</button>';
+  return h;
+}
+
+function hsum(list){
+  var r = { d: 0, r: 0, naqt: 0, karta: 0 };
+  list.forEach(function(o){ r[o.kind] += o.sum; r[o.pay] += (o.kind === "d" ? o.sum : -o.sum); });
+  r.foyda = r.d - r.r; return r;
+}
+function hisobView(){
+  var y = +S.hm.slice(0, 4), m = +S.hm.slice(5, 7) - 1;
+  var list = S.h.filter(function(o){ return o.dt.slice(0, 7) === S.hm; }).sort(function(a, b){ return a.dt < b.dt ? 1 : a.dt > b.dt ? -1 : b.id - a.id; });
+  var r = hsum(list);
+  var h = '<h1>MAJOR · HISOB-KITOB</h1><div class="mon"><button id="pm">‹</button><b>' + MONTHS[m] + ' ' + y + '</b><button id="nm">›</button></div>';
+  h += '<div class="card"><div class="mut">Foyda</div><div class="big ' + (r.foyda < 0 ? "neg" : "") + '">' + fmt(r.foyda) + '</div></div>';
+  h += '<div class="grid2"><div class="tile"><span class="mut">Daromad</span><b class="pos">' + fmt(r.d) + '</b></div><div class="tile"><span class="mut">Rasxod</span><b class="neg">' + fmt(r.r) + '</b></div>' +
+       '<div class="tile"><span class="mut">💵 Naqt</span><b>' + fmt(r.naqt) + '</b></div><div class="tile"><span class="mut">💳 Karta</span><b>' + fmt(r.karta) + '</b></div></div>';
+  h += '<div class="grid2" style="margin-top:12px"><button class="btn grn" data-h="d">➕ Daromad</button><button class="btn red" data-h="r">➖ Rasxod</button></div>';
+  ["d", "r"].forEach(function(k){
+    var by = {}; list.forEach(function(o){ if (o.kind === k) by[o.cat] = (by[o.cat] || 0) + o.sum; });
+    var names = Object.keys(by).sort(function(a, b){ return by[b] - by[a]; });
+    if (names.length){
+      h += '<h2>' + (k === "d" ? "Daromad" : "Rasxod") + ' - kategoriyalar</h2><div class="card">';
+      names.forEach(function(c){ h += '<div class="cat"><span>' + esc(c) + '</span><b>' + fmt(by[c]) + '</b></div>'; });
+      h += '</div>';
+    }
+  });
+  h += '<h2>Yozuvlar</h2>';
+  if (!list.length) h += '<div class="empty">Bu oyda yozuv yo\'q</div>';
+  else {
+    h += '<div class="card" style="padding:4px 14px">';
+    list.slice(0, S.more).forEach(function(o){
+      h += '<div class="op" data-hop="' + o.id + '"><div class="l"><div>' + esc(o.cat) + '</div><div class="mut">' + ddmm(o.dt).slice(0, 5) + ' · ' + (o.pay === "naqt" ? "Naqt" : "Karta") + (o.note ? ' · ' + esc(o.note) : '') + '</div></div><b class="' + (o.kind === "d" ? "pos" : "neg") + '">' + (o.kind === "d" ? "+" : "−") + fmt(o.sum) + '</b></div>';
+    });
+    h += '</div>';
+    if (list.length > S.more) h += '<button class="btn ghost" id="more">Yana ko\'rsatish</button>';
+  }
+  return h;
+}
+
+function settingsView(){
+  var h = '<h1>SOZLAMALAR</h1><div class="card"><div class="row"><span>Jamg\'arma yozuvlari</span><b>' + S.j.length + '</b></div><div class="row" style="margin-top:6px"><span>Hisob yozuvlari</span><b>' + S.h.length + '</b></div><div class="row" style="margin-top:6px"><span>Kassa yozuvlari / smenalar</span><b>' + S.k.length + ' / ' + S.sh.length + '</b></div><div class="row" style="margin-top:6px"><span>Mahsulotlar</span><b>' + livePr().length + '</b></div>' +
+    '<div class="mut" style="margin-top:8px">' + (inTg ? "Ma'lumot Telegram bulutida saqlanadi: kompyuter o'chiq bo'lsa ham ishlaydi, boshqa qurilmada ham shu hisob bilan ochilganda ko'rinadi." : "Telegram tashqarisida: ma'lumot shu brauzerda.") + '</div></div>';
+  h += '<h2>Zaxira</h2><div class="grid2"><button class="btn ghost" id="exp">📤 Nusxa olish</button><button class="btn ghost" id="imp">📥 Tiklash / import</button></div>';
+  h += '<div class="mut" style="margin-top:8px">Kompyuterdagi eski ma\'lumotni ko\'chirish: jamgarma_data.json, hisob_data.json yoki kassa_data.json ichidagi matnni nusxalab, "Tiklash / import" ga qo\'ying.</div>';
+  ["d", "r"].forEach(function(k){
+    h += '<h2>' + (k === "d" ? "Daromad" : "Rasxod") + ' kategoriyalari</h2><div class="card">';
+    S.cats[k].forEach(function(c, i){ h += '<div class="cat"><span>' + esc(c) + '</span><button class="x" data-delcat="' + k + ':' + i + '">✕</button></div>'; });
+    h += '<div class="row" style="margin-top:8px"><input placeholder="Yangi kategoriya" id="nc_' + k + '"><button class="btn sm" data-addcat="' + k + '">+</button></div></div>';
+  });
+  return h;
+}
+
+/* ================= pastki oyna (sheet) ================= */
+var sheetBack = null;
+function openSheet(html, onBack){ $("#sheet").innerHTML = html; $("#sheet").classList.add("on"); $("#ov").classList.add("on"); sheetBack = onBack || null; syncBack(); }
+function closeSheet(){ $("#sheet").classList.remove("on"); $("#ov").classList.remove("on"); $("#sheet").innerHTML = ""; sheetBack = null; syncBack(); }
+function sheetOpen(){ return $("#sheet").classList.contains("on"); }
+$("#ov").addEventListener("click", closeSheet);
+
+function chipsHtml(){ return '<div class="chips">' + [["10k", 10000], ["50k", 50000], ["100k", 100000], ["500k", 500000], ["1M", 1000000]].map(function(c){ return '<button type="button" data-chip="' + c[1] + '">+' + c[0] + '</button>'; }).join("") + '</div>'; }
+function bindChips(){ [].forEach.call(document.querySelectorAll("[data-chip]"), function(b){ b.onclick = function(){ var i = $("#fsum"); i.value = String((parseSum(i.value) || 0) + +b.dataset.chip); }; }); }
+function twoStep(btn, fn){ var armed = false; btn.onclick = function(){ if (!armed){ armed = true; btn.textContent = "Aniq o'chirilsinmi? Yana bosing"; setTimeout(function(){ armed = false; btn.textContent = "🗑 O'chirish"; }, 3500); } else fn(); }; }
+
+/* jamg'arma: qo'shish/to'lash va tahrir */
+function jopSheet(fid, kind, id){
+  var f = fundById(fid), o = id ? S.j.filter(function(x){ return String(x.id) === String(id); })[0] : null;
+  if (o) kind = o.kind;
+  openSheet('<h3>' + esc(f.name) + ' · ' + (o ? "Tahrirlash" : kind === "in" ? "Qo'shish" : "To'landi") + '</h3>' +
+    '<label>SUMMA</label><input id="fsum" inputmode="decimal" placeholder="masalan: 50k yoki 150000" value="' + (o ? o.sum : "") + '">' + (o ? "" : chipsHtml()) +
+    '<label>IZOH (ixtiyoriy)</label><input id="fnote" value="' + esc(o ? o.note : "") + '">' +
+    '<label>SANA</label><input id="fdate" type="date" value="' + (o ? o.dt : todayISO()) + '">' +
+    '<div class="acts"><button class="btn" id="fok">Saqlash</button>' + (o ? '<button class="btn ghost" id="fdel" style="color:var(--red)">🗑 O\'chirish</button>' : '') + '</div>');
+  bindChips();
+  $("#fok").onclick = function(){
+    var v = parseSum($("#fsum").value), dt = $("#fdate").value;
+    if (!v){ toast("Summani to'g'ri kiriting", true); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dt)){ toast("Sanani tanlang", true); return; }
+    var warned = false;
+    if (!o && kind === "out"){ var bal = fstats(f).bal; if (v > bal){ warned = true; setTimeout(function(){ toast("Diqqat: to'lov jamg'armadan ko'p (" + fmt(bal) + "). Yozildi.", true); }, 50); } }
+    if (o){ var oldM = o.dt.slice(0, 7); o.sum = v; o.note = $("#fnote").value.trim(); o.dt = dt; saveMonth("j", dt.slice(0, 7)); if (oldM !== dt.slice(0, 7)) saveMonth("j", oldM); }
+    else { S.j.push({ id: newId(), fund: f.id, kind: kind, sum: v, dt: dt, note: $("#fnote").value.trim() }); saveMonth("j", dt.slice(0, 7)); }
+    closeSheet(); render(); if (!warned) toast("Saqlandi");
+  };
+  if (o) twoStep($("#fdel"), function(){ S.j = S.j.filter(function(x){ return x !== o; }); saveMonth("j", o.dt.slice(0, 7)); closeSheet(); render(); toast("O'chirildi"); });
+}
+function fundSheet(id){
+  var f = id ? fundById(id) : null;
+  openSheet('<h3>' + (f ? "Fondni sozlash" : "Yangi fond") + '</h3><label>NOMI</label><input id="fnm" value="' + esc(f ? f.name : "") + '">' +
+    '<label>OYLIK TO\'LOV SUMMASI (0 = kiritilmagan)</label><input id="ftg" inputmode="decimal" value="' + (f ? f.target || 0 : 0) + '">' +
+    '<label>OYNING QAYSI KUNI TO\'LANADI (1-31)</label><input id="fdy" inputmode="numeric" value="' + (f ? f.day || 1 : 1) + '">' +
+    '<div class="acts"><button class="btn" id="fok">Saqlash</button>' + (f ? '<button class="btn ghost" id="fdel" style="color:var(--red)">🗑 O\'chirish</button>' : '') + '</div>');
+  $("#fok").onclick = function(){
+    var nm = $("#fnm").value.trim().slice(0, 40), tgv = $("#ftg").value.trim() === "0" ? 0 : parseSum($("#ftg").value), dy = parseInt($("#fdy").value, 10);
+    if (!nm){ toast("Nomini yozing", true); return; }
+    if (!(dy >= 1 && dy <= 31)){ toast("Kun 1 dan 31 gacha bo'lsin", true); return; }
+    if (f){ f.name = nm; f.target = tgv; f.day = dy; } else S.funds.push({ id: newId(), name: nm, target: tgv, day: dy });
+    saveMeta(); closeSheet(); render(); toast("Saqlandi");
+  };
+  if (f) twoStep($("#fdel"), function(){
+    var ms = monthsOf(S.j.filter(function(o){ return String(o.fund) === String(f.id); }));
+    S.j = S.j.filter(function(o){ return String(o.fund) !== String(f.id); }); S.funds = S.funds.filter(function(x){ return x !== f; });
+    saveMeta(); ms.forEach(function(m){ saveMonth("j", m); }); S.fund = null; closeSheet(); render(); toast("Fond o'chirildi");
+  });
+}
+
+/* hisob: qo'shish va tahrir */
+function hopSheet(kind, id){
+  var o = id ? S.h.filter(function(x){ return String(x.id) === String(id); })[0] : null;
+  var st = { k: o ? o.kind : kind, pay: o ? o.pay : "naqt" };
+  function body(){
+    var cats = S.cats[st.k].slice(); if (o && cats.indexOf(o.cat) < 0 && o.kind === st.k) cats.push(o.cat);
+    return '<h3>' + (o ? "Tahrirlash" : "Yangi yozuv") + '</h3><div class="seg" id="sk"><button type="button" data-k="d" class="' + (st.k === "d" ? "on" : "") + '">Daromad</button><button type="button" data-k="r" class="' + (st.k === "r" ? "on r" : "") + '">Rasxod</button></div>' +
+      '<label>KATEGORIYA</label><select id="hc">' + cats.map(function(c){ return '<option>' + esc(c) + '</option>'; }).join("") + '<option value="__new">➕ Yangi kategoriya…</option></select><input id="hcn" placeholder="Yangi kategoriya nomi" style="display:none;margin-top:8px">' +
+      '<label>TO\'LOV TURI</label><div class="seg" id="sp"><button type="button" data-p="naqt" class="' + (st.pay === "naqt" ? "on" : "") + '">💵 Naqt</button><button type="button" data-p="karta" class="' + (st.pay === "karta" ? "on" : "") + '">💳 Karta</button></div>' +
+      '<label>SUMMA</label><input id="fsum" inputmode="decimal" placeholder="masalan: 150k yoki 1.2m" value="' + (o ? o.sum : "") + '">' + (o ? "" : chipsHtml()) +
+      '<label>IZOH (ixtiyoriy)</label><input id="fnote" value="' + esc(o ? o.note : "") + '"><label>SANA</label><input id="fdate" type="date" value="' + (o ? o.dt : todayISO()) + '">' +
+      '<div class="acts"><button class="btn" id="fok">Saqlash</button>' + (o ? '<button class="btn ghost" id="fdel" style="color:var(--red)">🗑 O\'chirish</button>' : '') + '</div>';
+  }
+  var keep = {};
+  function wire(){
+    bindChips();
+    [].forEach.call(document.querySelectorAll("#sk [data-k]"), function(b){ b.onclick = function(){ keep = { sum: $("#fsum").value, note: $("#fnote").value, dt: $("#fdate").value }; st.k = b.dataset.k; draw(); }; });
+    [].forEach.call(document.querySelectorAll("#sp [data-p]"), function(b){ b.onclick = function(){ st.pay = b.dataset.p; [].forEach.call(document.querySelectorAll("#sp button"), function(x){ x.classList.toggle("on", x === b); }); }; });
+    $("#hc").onchange = function(){ $("#hcn").style.display = this.value === "__new" ? "block" : "none"; };
+    if (o && o.kind === st.k) $("#hc").value = o.cat;
+    if (keep.sum != null){ $("#fsum").value = keep.sum; $("#fnote").value = keep.note; $("#fdate").value = keep.dt; }
+    $("#fok").onclick = function(){
+      var v = parseSum($("#fsum").value), dt = $("#fdate").value, cat = $("#hc").value;
+      if (cat === "__new") cat = $("#hcn").value.trim().slice(0, 40);
+      if (!v){ toast("Summani to'g'ri kiriting", true); return; }
+      if (!cat){ toast("Kategoriyani tanlang yoki yozing", true); return; }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dt)){ toast("Sanani tanlang", true); return; }
+      if (S.cats[st.k].indexOf(cat) < 0){ S.cats[st.k].push(cat); saveMeta(); }
+      var note = $("#fnote").value.trim();
+      if (o){ var oldM = o.dt.slice(0, 7); o.kind = st.k; o.cat = cat; o.pay = st.pay; o.sum = v; o.dt = dt; o.note = note; saveMonth("h", dt.slice(0, 7)); if (oldM !== dt.slice(0, 7)) saveMonth("h", oldM); }
+      else { S.h.push({ id: newId(), dt: dt, kind: st.k, cat: cat, pay: st.pay, sum: v, note: note }); saveMonth("h", dt.slice(0, 7)); }
+      S.hm = dt.slice(0, 7); closeSheet(); render(); toast("Saqlandi");
+    };
+    if (o) twoStep($("#fdel"), function(){ S.h = S.h.filter(function(x){ return x !== o; }); saveMonth("h", o.dt.slice(0, 7)); closeSheet(); render(); toast("O'chirildi"); });
+  }
+  function draw(){ openSheet(body()); wire(); }
+  draw();
+}
+
+/* zaxira */
+function exportAll(){ return JSON.stringify({ app: "major", v: 1, jamgarma: { funds: S.funds, ops: S.j }, hisob: { ops: S.h, cats: S.cats }, kassa: { ops: S.k, shifts: S.sh, products: S.pr, moves: S.mv } }); }
+function expSheet(){
+  var txt = exportAll();
+  openSheet('<h3>Zaxira nusxa</h3><div class="mut">Matnni nusxalab, xavfsiz joyga (masalan, "Saqlangan xabarlar") tashlab qo\'ying. Kerak bo\'lsa "Tiklash / import" ga qaytarib qo\'yasiz.</div><label>MATN</label><textarea id="exr" readonly></textarea><div class="acts"><button class="btn" id="cp">📋 Nusxa olish</button></div>');
+  $("#exr").value = txt;
+  $("#cp").onclick = function(){
+    var done = function(){ toast("Nusxa olindi"); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function(){ $("#exr").select(); document.execCommand("copy"); done(); });
+    else { $("#exr").select(); try { document.execCommand("copy"); done(); } catch(e){ toast("Matnni qo'lda belgilab nusxalang", true); } }
+  };
+}
+function impSheet(){
+  openSheet('<h3>Tiklash / import</h3><div class="mut">Zaxira matnini yoki kompyuterdagi jamgarma_data.json / hisob_data.json ichidagi matnni shu yerga qo\'ying. Mavjud yozuvlar o\'chmaydi, faqat yangilari qo\'shiladi.</div><label>MATN</label><textarea id="imt" placeholder="{ ... }"></textarea><div class="acts"><button class="btn" id="imok">Import qilish</button></div>');
+  $("#imok").onclick = function(){
+    var d; try { d = JSON.parse($("#imt").value); } catch(e){ toast("Bu to'g'ri JSON emas", true); return; }
+    var res = importData(d); if (!res){ toast("Matn zaxiraga o'xshamaydi. Hech narsa o'zgarmadi.", true); return; }
+    closeSheet(); render(); toast("Qo'shildi: " + res);
+  };
+}
+function validJ(o){ return o && (o.kind === "in" || o.kind === "out") && o.sum > 0 && o.dt && o.fund != null && o.id != null; }
+function validH(o){ return o && (o.kind === "d" || o.kind === "r") && (o.pay === "naqt" || o.pay === "karta") && o.sum > 0 && o.dt && o.cat && o.id != null; }
+function validK(o){ return o && (o.type === "komp" || o.type === "bar") && (o.pay === "naqt" || o.pay === "karta") && o.sum > 0 && typeof o.dt === "string" && o.id != null; }
+function importKassa(k){
+  var ops = Array.isArray(k.ops) ? k.ops : [], sh = Array.isArray(k.shifts) ? k.shifts : [], pr = Array.isArray(k.products) ? k.products : [], mv = Array.isArray(k.moves) ? k.moves : [];
+  if (!ops.every(validK) || !sh.every(function(s){ return s && s.id != null && typeof s.open_dt === "string" && "open_cash" in s; }) ||
+      !pr.every(function(p){ return p && p.id != null && p.name; }) || !mv.every(function(m){ return m && m.id != null && m.pid != null && typeof m.dt === "string" && typeof m.qty === "number"; })) return null;
+  var c = [0, 0, 0, 0], mk = {}, mm = {};
+  function ids(l){ var r = {}; l.forEach(function(x){ r[x.id] = 1; }); return r; }
+  var i1 = ids(S.k), i2 = ids(S.sh), i3 = ids(S.pr), i4 = ids(S.mv);
+  ops.forEach(function(o){ if (!i1[o.id]){ S.k.push(o); mk[o.dt.slice(0, 7)] = 1; c[0]++; } });
+  sh.forEach(function(x){ if (!i2[x.id]){ S.sh.push(x); c[1]++; } });
+  pr.forEach(function(x){ if (!i3[x.id]){ S.pr.push(x); c[2]++; } });
+  mv.forEach(function(x){ if (!i4[x.id]){ S.mv.push(x); mm[x.dt.slice(0, 7)] = 1; c[3]++; } });
+  if (c[1]) saveSh(); if (c[2]) savePr();
+  Object.keys(mk).forEach(saveK); Object.keys(mm).forEach(saveMv);
+  return { c: c };
+}
+function importData(d){
+  var kres = null, kd = null;
+  if (d && d.kassa && typeof d.kassa === "object") kd = d.kassa;
+  else if (d && !d.jamgarma && !d.hisob && (Array.isArray(d.shifts) || (Array.isArray(d.ops) && d.ops.some(function(o){ return o && o.type; })))) kd = d;
+  if (kd){
+    kres = importKassa(kd); if (!kres) return null;
+    if (!(d.jamgarma || d.hisob)) return kres.c[0] + " kassa yozuvi, " + kres.c[1] + " smena, " + kres.c[2] + " mahsulot, " + kres.c[3] + " ombor harakati";
+  }
+  var jf = null, jo = null, ho = null, cats = null;
+  if (d && d.jamgarma){ jf = d.jamgarma.funds; jo = d.jamgarma.ops; }
+  if (d && d.hisob){ ho = d.hisob.ops; cats = d.hisob.cats; }
+  if (d && Array.isArray(d.funds)){ jf = d.funds; jo = d.ops || []; }
+  else if (d && Array.isArray(d.ops) && !d.jamgarma && !d.hisob){ ho = d.ops; cats = d.cats; }
+  var okJ = Array.isArray(jf) && Array.isArray(jo || []) && jf.every(function(f){ return f && f.id != null && f.name; }) && (jo || []).every(validJ);
+  var okH = Array.isArray(ho) && ho.every(validH);
+  if (!(okJ && jf) && !okH) return kres ? "kassa" : null;
+  var addF = 0, addJ = 0, addH = 0, mJ = {}, mH = {};
+  if (okJ && jf){
+    var fid = {}; S.funds.forEach(function(f){ fid[f.id] = 1; });
+    jf.forEach(function(f){ if (!fid[f.id]){ S.funds.push({ id: f.id, name: String(f.name), target: f.target || 0, day: f.day || 1 }); addF++; } });
+    var jid = {}; S.j.forEach(function(o){ jid[o.id] = 1; });
+    (jo || []).forEach(function(o){ if (!jid[o.id]){ S.j.push({ id: o.id, fund: o.fund, kind: o.kind, sum: o.sum, dt: o.dt, note: o.note || "" }); mJ[o.dt.slice(0, 7)] = 1; addJ++; } });
+  }
+  if (okH){
+    var hid = {}; S.h.forEach(function(o){ hid[o.id] = 1; });
+    ho.forEach(function(o){ if (!hid[o.id]){ S.h.push({ id: o.id, dt: o.dt, kind: o.kind, cat: o.cat, pay: o.pay, sum: o.sum, note: o.note || "" }); mH[o.dt.slice(0, 7)] = 1; addH++; } });
+    ["d", "r"].forEach(function(k){ ((cats && cats[k]) || []).concat(ho.filter(function(o){ return o.kind === k; }).map(function(o){ return o.cat; })).forEach(function(c){ if (S.cats[k].indexOf(c) < 0) S.cats[k].push(c); }); });
+  }
+  saveMeta(); Object.keys(mJ).forEach(function(m){ saveMonth("j", m); }); Object.keys(mH).forEach(function(m){ saveMonth("h", m); });
+  return (addF ? addF + " fond, " : "") + addJ + " jamg'arma va " + addH + " hisob yozuvi" + (kres ? " (+kassa)" : "");
+}
+
+/* ================= KASSA + OMBOR ================= */
+function nowDT(){ var d = new Date(); return iso(d) + " " + pad(d.getHours()) + ":" + pad(d.getMinutes()); }
+function curShift(){ var o = S.sh.filter(function(s){ return !s.close_dt; }); return o.length ? o[o.length - 1] : null; }
+function smapF(){ var m = {}; S.sh.forEach(function(s){ m[s.id] = s.open_dt.slice(0, 10); }); return m; }
+function opDay(o, m){ return m[o.shift] || o.dt.slice(0, 10); }
+function ksums(l){ var r = { komp: 0, bar: 0, naqt: 0, karta: 0, jami: 0 }; l.forEach(function(o){ r[o.type] += o.sum; r[o.pay] += o.sum; r.jami += o.sum; }); return r; }
+function shiftOps(s){ return S.k.filter(function(o){ return o.shift === s.id; }).sort(function(a, b){ return a.dt < b.dt ? 1 : a.dt > b.dt ? -1 : b.id - a.id; }); }
+function saveSh(){ return saveName("shifts", S.sh); }
+function savePr(){ return saveName("prod", S.pr); }
+function saveK(ym){ return saveName("k_" + ym, S.k.filter(function(o){ return o.dt.slice(0, 7) === ym; })); }
+function saveMv(ym){ return saveName("mv_" + ym, S.mv.filter(function(m){ return m.dt.slice(0, 7) === ym; })); }
+function livePr(){ return S.pr.filter(function(p){ return !p.off; }).sort(function(a, b){ return a.name.localeCompare(b.name); }); }
+function prodById(id){ return S.pr.filter(function(p){ return String(p.id) === String(id); })[0]; }
+function stockMap(){ var r = {}; S.mv.forEach(function(m){ r[m.pid] = (r[m.pid] || 0) + m.qty; }); return r; }
+function addMove(pid, kind, qty, note, extra){
+  var m = { id: newId(), pid: pid, kind: kind, qty: qty, dt: nowDT(), note: note || "" };
+  if (extra) Object.keys(extra).forEach(function(k){ m[k] = extra[k]; });
+  S.mv.push(m); return m;
+}
+function soldStats(mode){
+  var sm = smapF(), today = bizDay(), r = {};
+  S.mv.forEach(function(m){
+    if (m.kind !== "sale") return;
+    var d = sm[m.shift] || m.dt.slice(0, 10);
+    if (mode === "day" && d !== today) return;
+    if (mode === "month" && d.slice(0, 7) !== today.slice(0, 7)) return;
+    var x = r[m.pid] || [0, 0]; x[0] -= m.qty; x[1] -= m.qty * (m.price || 0); r[m.pid] = x;
+  });
+  return r;
+}
+function bizDay(){ var s = curShift(); return s ? s.open_dt.slice(0, 10) : todayISO(); }
+function diffTxt(d){ return d === 0 ? "to'g'ri (farq yo'q)" : fmt(Math.abs(d)) + " so'm " + (d < 0 ? "KAM" : "ORTIQCHA"); }
+
+function kassaView(){
+  var s = curShift(), h = '<h1>MAJOR · KASSA</h1>';
+  if (!s){
+    var last = S.sh.length ? S.sh.slice().sort(function(a, b){ return a.open_dt < b.open_dt ? 1 : -1; })[0] : null;
+    h += '<div class="card"><div class="big neg" style="font-size:22px">● KASSA YOPIQ</div><div class="mut" style="margin-top:6px">Sotuv yozish uchun avval kassani oching.</div></div>' +
+         '<button class="btn grn" data-kc="open">🔓 Kassani ochish</button>';
+    if (last) h += '<button class="btn ghost" data-kc="reopen" style="margin-top:10px">↩ Oxirgi smenani qayta ochish</button>';
+  } else {
+    var list = shiftOps(s), r = ksums(list), exp = s.open_cash + r.naqt;
+    h += '<div class="card"><div class="row"><span class="pos"><b>● KASSA OCHIQ</b> · ' + s.open_dt.slice(11) + ' dan</span><button class="btn red sm" data-kc="close">Yopish</button></div>' +
+      '<div class="mut" style="margin-top:8px">Smena jami</div><div class="big">' + fmt(r.jami) + '</div>' +
+      '<div class="grid2" style="margin-top:10px"><div><span class="mut">🖥 Komp</span><br><b>' + fmt(r.komp) + '</b></div><div><span class="mut">🍹 Bar</span><br><b>' + fmt(r.bar) + '</b></div>' +
+      '<div><span class="mut">💵 Naqt</span><br><b>' + fmt(r.naqt) + '</b></div><div><span class="mut">💳 Karta</span><br><b>' + fmt(r.karta) + '</b></div></div>' +
+      '<div class="mut" style="margin-top:8px">Kassada bo\'lishi kerak: <b style="color:var(--txt)">' + fmt(exp) + '</b></div></div>';
+    h += '<div class="seg" id="skm"><button data-kc="m:prod" class="' + (S.kmode === "prod" ? "on" : "") + '">📦 Mahsulot</button><button data-kc="m:num" class="' + (S.kmode === "num" ? "on" : "") + '">🔢 Summa</button></div>';
+    h += '<div class="seg" style="margin-top:8px"><button data-kc="p:naqt" class="' + (S.kpay === "naqt" ? "on" : "") + '">💵 Naqt</button><button data-kc="p:karta" class="' + (S.kpay === "karta" ? "on" : "") + '">💳 Karta</button></div>';
+    if (S.kmode === "prod") h += '<div id="kprod" style="margin-top:10px">' + kprodHtml() + '</div>';
+    else h += numHtml();
+    h += '<h2>Smena operatsiyalari</h2>';
+    if (!list.length) h += '<div class="empty">Hali yozuv yo\'q</div>';
+    else { h += '<div class="card" style="padding:4px 14px">'; list.slice(0, S.more).forEach(function(o){
+      h += '<div class="op" data-kop="' + o.id + '"><div class="l"><div>' + (o.type === "komp" ? "🖥 Komp" : "🍹 Bar") + ' · ' + (o.pay === "naqt" ? "Naqt" : "Karta") + '</div><div class="mut">' + o.dt.slice(11) + (o.note ? ' · ' + esc(o.note) : '') + '</div></div><b>' + fmt(o.sum) + '</b></div>'; });
+      h += '</div>'; if (list.length > S.more) h += '<button class="btn ghost" id="more">Yana ko\'rsatish</button>'; }
+  }
+  h += krepHtml();
+  return h;
+}
+function numHtml(){
+  return '<div class="card" style="margin-top:10px"><div class="seg"><button data-kc="t:komp" class="' + (S.ktype === "komp" ? "on" : "") + '">🖥 Komp</button><button data-kc="t:bar" class="' + (S.ktype === "bar" ? "on" : "") + '">🍹 Bar</button></div>' +
+    '<label>SUMMA</label><input id="ksum" inputmode="decimal" placeholder="masalan: 25k yoki 25000">' + chipsHtml().replace(/data-chip/g, 'data-kchip') +
+    '<label>IZOH (ixtiyoriy)</label><input id="knote"><div class="acts"><button class="btn" data-kc="addnum">Qo\'shish</button></div></div>';
+}
+function kprodHtml(){
+  var ps = livePr(), st = stockMap();
+  if (!ps.length) return '<div class="card empty">Mahsulot yo\'q. «Ombor» bo\'limidan qo\'shing.</div>';
+  var h = '<div class="pg">';
+  ps.forEach(function(p){
+    var q = S.cart[p.id] || 0, left = st[p.id] || 0;
+    h += '<button class="pt' + (q ? " sel" : "") + '" data-kc="add:' + p.id + '">' + (q ? '<i>×' + q + '</i>' : '') + '<span>' + esc(p.name) + '</span><b>' + fmt(p.price || 0) + '</b><small class="' + (left <= (p.min || 0) ? "neg" : "") + '">qoldi: ' + left + '</small></button>';
+  });
+  h += '</div>';
+  var ids = Object.keys(S.cart);
+  if (ids.length){
+    var total = 0; h += '<div class="card" style="margin-top:10px">';
+    ids.forEach(function(id){ var p = prodById(id), q = S.cart[id]; total += (p.price || 0) * q;
+      h += '<div class="row" style="padding:5px 0"><span>' + esc(p.name) + '</span><span><button class="x" style="color:var(--txt)" data-kc="min:' + id + '">−</button> <b>' + q + '</b> <button class="x" style="color:var(--txt)" data-kc="add:' + id + '">+</button></span><b>' + fmt((p.price || 0) * q) + '</b></div>'; });
+    h += '<div class="row" style="margin-top:8px"><span class="mut">Jami</span><span class="big" style="font-size:24px">' + fmt(total) + '</span></div>' +
+      '<div class="acts"><button class="btn ghost" data-kc="clear">Tozalash</button><button class="btn grn" data-kc="sell">✅ Sotish (' + (S.kpay === "naqt" ? "naqt" : "karta") + ')</button></div></div>';
+  }
+  return h;
+}
+function updCart(){ var e = $("#kprod"); if (e) e.innerHTML = kprodHtml(); }
+
+function krepHtml(){
+  var sm = smapF(), y = +S.km.slice(0, 4), m = +S.km.slice(5, 7) - 1;
+  var list = S.k.filter(function(o){ return opDay(o, sm).slice(0, 7) === S.km; }), by = {};
+  list.forEach(function(o){ var d = opDay(o, sm); (by[d] = by[d] || []).push(o); });
+  var h = '<h2>Hisobot (hisob kuni bo\'yicha)</h2><div class="mon"><button data-kc="pm">‹</button><b>' + MONTHS[m] + ' ' + y + '</b><button data-kc="nm">›</button></div>', t = ksums(list);
+  h += '<div class="card"><div class="mut">Oy jami</div><div class="big">' + fmt(t.jami) + '</div><div class="mut" style="margin-top:6px">🖥 ' + fmt(t.komp) + ' · 🍹 ' + fmt(t.bar) + ' · 💵 ' + fmt(t.naqt) + ' · 💳 ' + fmt(t.karta) + '</div></div>';
+  var days = Object.keys(by).sort().reverse();
+  if (days.length){ h += '<div class="card" style="padding:4px 14px">'; days.forEach(function(d){ var x = ksums(by[d]);
+    h += '<div class="op" style="cursor:default"><div class="l"><div>' + ddmm(d).slice(0, 5) + '</div><div class="mut">🖥 ' + fmt(x.komp) + ' · 🍹 ' + fmt(x.bar) + '</div></div><b>' + fmt(x.jami) + '</b></div>'; }); h += '</div>'; }
+  h += '<h2>Smenalar</h2>';
+  var shs = S.sh.slice().sort(function(a, b){ return a.open_dt < b.open_dt ? 1 : -1; }).slice(0, 15);
+  if (!shs.length) h += '<div class="empty">Smena yo\'q</div>';
+  else { h += '<div class="card" style="padding:4px 14px">'; shs.forEach(function(s){ var r = ksums(shiftOps(s)), tag;
+    if (s.close_dt){ var d = s.close_cash - (s.open_cash + r.naqt); tag = '<span class="' + (d === 0 ? "pos" : "neg") + '">' + (d === 0 ? "✓" : (d > 0 ? "+" : "") + fmt(d)) + '</span>'; } else tag = '<span class="pos">ochiq</span>';
+    h += '<div class="op" data-ksh="' + s.id + '"><div class="l"><div>' + ddmm(s.open_dt.slice(0, 10)).slice(0, 5) + ' ' + s.open_dt.slice(11) + (s.close_dt ? ' – ' + s.close_dt.slice(11) : '') + '</div><div class="mut">Farq: ' + tag + '</div></div><b>' + fmt(r.jami) + '</b></div>'; });
+    h += '</div>'; }
+  return h;
+}
+
+function omborView(){
+  var ps = livePr(), st = stockMap(), sold = soldStats(S.omode), h = '<h1>MAJOR · OMBOR</h1>';
+  var low = ps.filter(function(p){ return (st[p.id] || 0) <= (p.min || 0) && (p.min || 0) > 0; });
+  if (low.length) h += '<div class="banner">⚠️ Tugayapti: ' + low.map(function(p){ return esc(p.name) + ' (' + (st[p.id] || 0) + ')'; }).join(", ") + '</div>';
+  h += '<div class="seg"><button data-om="day" class="' + (S.omode === "day" ? "on" : "") + '">Bugun</button><button data-om="month" class="' + (S.omode === "month" ? "on" : "") + '">Shu oy</button><button data-om="all" class="' + (S.omode === "all" ? "on" : "") + '">Hammasi</button></div>';
+  h += '<div class="grid2" style="margin:10px 0"><button class="btn" data-ob="new">➕ Mahsulot</button><button class="btn ghost" data-ob="recv">📥 Kirim</button></div>';
+  if (!ps.length) return h + '<div class="empty">Mahsulot yo\'q. «➕ Mahsulot» ni bosing.</div>';
+  h += '<div class="card" style="padding:4px 14px">';
+  ps.forEach(function(p){ var q = st[p.id] || 0, so = sold[p.id] || [0, 0];
+    h += '<div class="op" data-prod="' + p.id + '"><div class="l"><div>' + esc(p.name) + '</div><div class="mut">' + fmt(p.price || 0) + ' so\'m · sotildi: ' + so[0] + ' (' + fmt(so[1]) + ')</div></div><b class="' + (q <= (p.min || 0) ? "neg" : "") + '">' + q + '</b></div>'; });
+  return h + '</div><div class="mut">O\'ngdagi raqam - hozir omborda qolgani (dona).</div>';
+}
+
+function numIn(id){ var v = parseInt(String($(id).value).replace(/\s/g, ""), 10); return isFinite(v) ? v : NaN; }
+function prodSheet(id){
+  var p = id ? prodById(id) : null;
+  openSheet('<h3>' + (p ? "Mahsulotni o'zgartirish" : "Yangi mahsulot") + '</h3><label>NOMI</label><input id="pn" value="' + esc(p ? p.name : "") + '">' +
+    '<label>SOTUV NARXI (so\'m)</label><input id="pp" inputmode="numeric" value="' + (p ? p.price || 0 : "") + '">' +
+    '<label>KELISH NARXI (ixtiyoriy)</label><input id="pc" inputmode="numeric" value="' + (p ? p.cost || 0 : "") + '">' +
+    '<label>OGOHLANTIRISH CHEGARASI (dona)</label><input id="pm" inputmode="numeric" value="' + (p ? p.min || 0 : 0) + '">' +
+    (p ? "" : '<label>HOZIRGI QOLDIQ (dona)</label><input id="pq" inputmode="numeric" value="0">') +
+    '<div class="acts"><button class="btn" id="fok">Saqlash</button>' + (p ? '<button class="btn ghost" id="fdel" style="color:var(--red)">🗑 O\'chirish</button>' : '') + '</div>');
+  $("#fok").onclick = function(){
+    var nm = $("#pn").value.trim().slice(0, 40), pr = numIn("#pp") || 0, co = numIn("#pc") || 0, mn = numIn("#pm") || 0, q = p ? 0 : (numIn("#pq") || 0);
+    if (!nm){ toast("Nomini yozing", true); return; }
+    if (S.pr.some(function(x){ return !x.off && x !== p && x.name.toLowerCase() === nm.toLowerCase(); })){ toast("Bunday mahsulot bor", true); return; }
+    if (p){ p.name = nm; p.price = pr; p.cost = co; p.min = mn; savePr(); }
+    else { var np = { id: newId(), name: nm, price: pr, cost: co, min: mn }; S.pr.push(np); savePr(); S.kmode = "prod"; if (q > 0){ addMove(np.id, "in", q, "Boshlang'ich qoldiq"); saveMv(nowDT().slice(0, 7)); } }
+    closeSheet(); render(); toast("Saqlandi");
+  };
+  if (p) twoStep($("#fdel"), function(){ p.off = true; delete S.cart[p.id]; savePr(); closeSheet(); render(); toast("O'chirildi (tarix saqlanadi)"); });
+}
+function recvSheet(pid){
+  var ps = livePr(); if (!ps.length){ toast("Avval mahsulot qo'shing", true); return; }
+  openSheet('<h3>Kirim (omborga qo\'shish)</h3><label>MAHSULOT</label><select id="rp">' + ps.map(function(p){ return '<option value="' + p.id + '"' + (String(p.id) === String(pid) ? " selected" : "") + '>' + esc(p.name) + '</option>'; }).join("") + '</select>' +
+    '<label>NECHTA DONA</label><input id="rq" inputmode="numeric"><label>KELISH NARXI (ixtiyoriy)</label><input id="rc" inputmode="numeric"><label>IZOH</label><input id="rn"><div class="acts"><button class="btn" id="fok">Saqlash</button></div>');
+  $("#fok").onclick = function(){
+    var q = numIn("#rq"), c = numIn("#rc") || 0, p = prodById($("#rp").value);
+    if (!(q > 0)){ toast("Sonini kiriting", true); return; }
+    if (c) p.cost = c, savePr();
+    var ex = c ? { price: c } : null; addMove(p.id, "in", q, $("#rn").value.trim() || "Kirim", ex); saveMv(nowDT().slice(0, 7));
+    closeSheet(); render(); toast(p.name + ": +" + q);
+  };
+}
+function countSheet(pid){
+  var p = prodById(pid), cur = stockMap()[pid] || 0;
+  openSheet('<h3>Sanash: ' + esc(p.name) + '</h3><div class="mut">Hozir tizimda: <b>' + cur + '</b> dona</div><label>HAQIQATDA NECHTA</label><input id="cq" inputmode="numeric"><div class="acts"><button class="btn" id="fok">Saqlash</button></div>');
+  $("#fok").onclick = function(){
+    var a = numIn("#cq"); if (!(a >= 0)){ toast("Sonini kiriting", true); return; }
+    var d = a - cur; if (d){ addMove(pid, "adj", d, "Sanash: " + cur + " → " + a); saveMv(nowDT().slice(0, 7)); }
+    closeSheet(); render(); toast(d ? "To'g'rilandi: " + (d > 0 ? "+" : "") + d : "Farq yo'q");
+  };
+}
+var MVN = { "in": "Kirim", sale: "Sotuv", adj: "Sanash" };
+function histSheet(pid){
+  var p = prodById(pid), ms = S.mv.filter(function(m){ return String(m.pid) === String(pid); }).sort(function(a, b){ return a.dt < b.dt ? 1 : a.dt > b.dt ? -1 : b.id - a.id; }).slice(0, 60);
+  openSheet('<h3>Tarix: ' + esc(p.name) + '</h3>' + (ms.length ? '<div>' + ms.map(function(m){ return '<div class="op" style="cursor:default"><div class="l"><div>' + MVN[m.kind] + '</div><div class="mut">' + ddmm(m.dt.slice(0, 10)).slice(0, 5) + ' ' + m.dt.slice(11) + (m.note ? ' · ' + esc(m.note) : '') + '</div></div><b class="' + (m.qty > 0 ? "pos" : "neg") + '">' + (m.qty > 0 ? "+" : "") + m.qty + '</b></div>'; }).join("") + '</div>' : '<div class="empty">Yo\'q</div>'));
+}
+function prodActSheet(pid){
+  var p = prodById(pid), q = stockMap()[pid] || 0;
+  openSheet('<h3>' + esc(p.name) + '</h3><div class="mut">Narx: ' + fmt(p.price || 0) + ' · omborda: <b style="color:var(--txt)">' + q + '</b> dona</div>' +
+    '<div class="grid2" style="margin-top:14px"><button class="btn" id="a1">📥 Kirim</button><button class="btn ghost" id="a2">🔢 Sanash</button><button class="btn ghost" id="a3">🕘 Tarix</button><button class="btn ghost" id="a4">✏️ O\'zgartirish</button></div>');
+  $("#a1").onclick = function(){ recvSheet(pid); }; $("#a2").onclick = function(){ countSheet(pid); };
+  $("#a3").onclick = function(){ histSheet(pid); }; $("#a4").onclick = function(){ prodSheet(pid); };
+}
+
+function kopSheet(id){
+  var o = S.k.filter(function(x){ return String(x.id) === String(id); })[0]; if (!o) return;
+  var linked = S.mv.some(function(m){ return m.op === o.id; });
+  openSheet('<h3>' + (o.type === "komp" ? "Komp" : "Bar") + ' · ' + fmt(o.sum) + ' so\'m</h3><div class="mut">' + o.dt + ' · ' + (o.pay === "naqt" ? "Naqt" : "Karta") + (o.note ? '<br>' + esc(o.note) : '') + (linked ? '<br>O\'chirsangiz, ombordagi sotuv ham bekor bo\'ladi.' : '') + '</div><div class="acts"><button class="btn ghost" id="fdel" style="color:var(--red)">🗑 O\'chirish</button></div>');
+  twoStep($("#fdel"), function(){
+    var ym = o.dt.slice(0, 7), mm = {}; S.mv.forEach(function(m){ if (m.op === o.id) mm[m.dt.slice(0, 7)] = 1; });
+    S.k = S.k.filter(function(x){ return x !== o; }); S.mv = S.mv.filter(function(m){ return m.op !== o.id; });
+    saveK(ym); Object.keys(mm).forEach(saveMv); closeSheet(); render(); toast("O'chirildi");
+  });
+}
+function openShiftSheet(){
+  var closed = S.sh.filter(function(s){ return s.close_dt; }).sort(function(a, b){ return a.open_dt < b.open_dt ? 1 : -1; }), def = closed.length ? closed[0].close_cash || 0 : 0;
+  openSheet('<h3>Kassani ochish</h3><label>KASSADAGI NAQT PUL (0 ham bo\'ladi)</label><input id="oc" inputmode="decimal" value="' + def + '"><div class="acts"><button class="btn grn" id="fok">🔓 Ochish</button></div>');
+  $("#fok").onclick = function(){
+    var t = $("#oc").value.replace(/\s/g, ""), v = t === "0" ? 0 : parseSum(t); if (t === "" || (v === 0 && t !== "0")){ toast("Summani kiriting", true); return; }
+    S.sh.push({ id: newId(), open_dt: nowDT(), open_cash: v, close_dt: null }); saveSh(); closeSheet(); render(); toast("Kassa ochildi");
+  };
+}
+function closeShiftSheet(){
+  var s = curShift(); if (!s) return; var r = ksums(shiftOps(s)), exp = s.open_cash + r.naqt;
+  openSheet('<h3>Kassani yopish</h3><div class="card"><div class="row"><span class="mut">Boshlang\'ich naqt</span><b>' + fmt(s.open_cash) + '</b></div><div class="row"><span class="mut">Naqt tushum</span><b>' + fmt(r.naqt) + '</b></div><div class="row"><span class="mut">Karta</span><b>' + fmt(r.karta) + '</b></div><div class="row"><span class="mut">Jami</span><b>' + fmt(r.jami) + '</b></div><div class="row" style="margin-top:6px"><span>Kassada bo\'lishi kerak</span><b style="color:var(--gold)">' + fmt(exp) + '</b></div></div>' +
+    '<label>HAQIQIY SANALGAN NAQT</label><input id="cc" inputmode="decimal"><div class="acts"><button class="btn red" id="fok">🔒 Yopish</button></div>');
+  $("#fok").onclick = function(){
+    var t = $("#cc").value.replace(/\s/g, ""), v = t === "0" ? 0 : parseSum(t); if (t === "" || (v === 0 && t !== "0")){ toast("Summani kiriting", true); return; }
+    s.close_dt = nowDT(); s.close_cash = v; s.expected_cash = exp; saveSh(); closeSheet(); render(); toast("Yopildi. Farq: " + diffTxt(v - exp));
+  };
+}
+function shiftSheet(id){
+  var s = S.sh.filter(function(x){ return String(x.id) === String(id); })[0]; if (!s) return;
+  var r = ksums(shiftOps(s)), exp = s.open_cash + r.naqt;
+  openSheet('<h3>Smena hisoboti</h3><div class="card"><div class="mut">Ochilgan: ' + s.open_dt + '<br>Yopilgan: ' + (s.close_dt || "— hali ochiq") + '</div>' +
+    '<div class="row" style="margin-top:8px"><span class="mut">Boshlang\'ich naqt</span><b>' + fmt(s.open_cash) + '</b></div><div class="row"><span class="mut">🖥 Komp</span><b>' + fmt(r.komp) + '</b></div><div class="row"><span class="mut">🍹 Bar</span><b>' + fmt(r.bar) + '</b></div><div class="row"><span class="mut">💵 Naqt</span><b>' + fmt(r.naqt) + '</b></div><div class="row"><span class="mut">💳 Karta</span><b>' + fmt(r.karta) + '</b></div><div class="row"><span>JAMI</span><b style="color:var(--gold)">' + fmt(r.jami) + '</b></div><div class="row"><span class="mut">Bo\'lishi kerak</span><b>' + fmt(exp) + '</b></div>' +
+    (s.close_dt ? '<div class="row"><span class="mut">Sanalgan</span><b>' + fmt(s.close_cash) + '</b></div><div class="row"><span class="mut">Farq</span><b>' + diffTxt(s.close_cash - exp) + '</b></div>' : '') + '</div>');
+}
+function reopenLast(){
+  var last = S.sh.slice().sort(function(a, b){ return a.open_dt < b.open_dt ? 1 : -1; })[0]; if (!last || curShift()) return;
+  last.close_dt = null; delete last.close_cash; delete last.expected_cash; saveSh(); render(); toast("Smena qayta ochildi");
+}
+function doSale(){
+  var s = curShift(); if (!s){ toast("Kassa yopiq", true); return; }
+  var total = 0, parts = [], items = [], st = stockMap(), over = [];
+  Object.keys(S.cart).forEach(function(id){ var p = prodById(id), q = S.cart[id]; if (!p) return; total += (p.price || 0) * q; parts.push(p.name + " ×" + q); items.push([p.id, q, p.price || 0]); if ((st[p.id] || 0) < q) over.push(p.name); });
+  if (!items.length) return;
+  if (total <= 0){ toast("Narx 0. Mahsulot narxini kiriting.", true); return; }
+  var now = nowDT(), op = { id: newId(), shift: s.id, dt: now, type: "bar", pay: S.kpay, sum: total, note: parts.join(", ") };
+  S.k.push(op); items.forEach(function(x){ addMove(x[0], "sale", -x[1], "", { shift: s.id, op: op.id, price: x[2], dt: now }); });
+  S.cart = {}; saveK(now.slice(0, 7)); saveMv(now.slice(0, 7)); render();
+  if (over.length) toast("Sotildi: " + fmt(total) + ". Diqqat, omborda yetmagan: " + over.join(", "), true); else toast("✅ Sotildi: " + fmt(total) + " so'm");
+}
+function kassaClick(t){
+  var kc = t.dataset.kc;
+  if (kc){
+    var a = kc.split(":"), c = a[0], v = a[1];
+    if (c === "open") openShiftSheet();
+    else if (c === "close") closeShiftSheet();
+    else if (c === "reopen") reopenLast();
+    else if (c === "m"){ S.kmode = v; render(); }
+    else if (c === "p"){ S.kpay = v; if (S.kmode === "prod"){ [].forEach.call(document.querySelectorAll('[data-kc^="p:"]'), function(b){ b.classList.toggle("on", b.dataset.kc === kc); }); updCart(); } else render(); }
+    else if (c === "t"){ S.ktype = v; [].forEach.call(document.querySelectorAll('[data-kc^="t:"]'), function(b){ b.classList.toggle("on", b.dataset.kc === kc); }); }
+    else if (c === "add"){ S.cart[v] = (S.cart[v] || 0) + 1; updCart(); }
+    else if (c === "min"){ if (S.cart[v] > 1) S.cart[v]--; else delete S.cart[v]; updCart(); }
+    else if (c === "clear"){ S.cart = {}; updCart(); }
+    else if (c === "sell") doSale();
+    else if (c === "addnum"){
+      var s = curShift(), sum = parseSum($("#ksum").value); if (!s){ toast("Kassa yopiq", true); return true; } if (!sum){ toast("Summani to'g'ri kiriting", true); return true; }
+      var now = nowDT(); S.k.push({ id: newId(), shift: s.id, dt: now, type: S.ktype, pay: S.kpay, sum: sum, note: $("#knote").value.trim() }); saveK(now.slice(0, 7)); render(); toast("Qo'shildi: " + fmt(sum));
+    }
+    else if (c === "pm" || c === "nm"){ var y = +S.km.slice(0, 4), m = +S.km.slice(5, 7) - 1 + (c === "pm" ? -1 : 1), d = new Date(y, m, 1); S.km = d.getFullYear() + "-" + pad(d.getMonth() + 1); render(); }
+    return true;
+  }
+  if (t.dataset.kchip){ var i = $("#ksum"); i.value = String((parseSum(i.value) || 0) + +t.dataset.kchip); return true; }
+  if (t.dataset.kop){ kopSheet(t.dataset.kop); return true; }
+  if (t.dataset.ksh){ shiftSheet(t.dataset.ksh); return true; }
+  if (t.dataset.om){ S.omode = t.dataset.om; render(); return true; }
+  if (t.dataset.ob){ if (t.dataset.ob === "new") prodSheet(null); else recvSheet(null); return true; }
+  if (t.dataset.prod){ prodActSheet(t.dataset.prod); return true; }
+  return false;
+}
+
+/* ================= hodisalar ================= */
+document.addEventListener("click", function(e){
+  var t = e.target.closest("button,[data-fund],[data-jop],[data-hop],[data-kop],[data-ksh],[data-prod]"); if (!t) return;
+  if (t.closest("nav")){ S.tab = t.dataset.t; S.fund = null; S.more = 40; closeSheet(); render(); window.scrollTo(0, 0); return; }
+  if (kassaClick(t)) return;
+  if (t.dataset.fund){ S.fund = t.dataset.fund; S.more = 40; render(); window.scrollTo(0, 0); }
+  else if (t.id === "back"){ S.fund = null; render(); }
+  else if (t.id === "newFund") fundSheet(null);
+  else if (t.id === "fset") fundSheet(S.fund);
+  else if (t.dataset.op) jopSheet(S.fund, t.dataset.op);
+  else if (t.dataset.jop) jopSheet(S.fund, null, t.dataset.jop);
+  else if (t.dataset.h) hopSheet(t.dataset.h);
+  else if (t.dataset.hop) hopSheet(null, t.dataset.hop);
+  else if (t.id === "more"){ S.more += 40; render(); }
+  else if (t.id === "pm" || t.id === "nm"){ var y = +S.hm.slice(0, 4), m = +S.hm.slice(5, 7) - 1 + (t.id === "pm" ? -1 : 1); var d = new Date(y, m, 1); S.hm = d.getFullYear() + "-" + pad(d.getMonth() + 1); S.more = 40; render(); }
+  else if (t.id === "exp") expSheet();
+  else if (t.id === "imp") impSheet();
+  else if (t.dataset.addcat){ var k = t.dataset.addcat, inp = $("#nc_" + k), v = inp.value.trim().slice(0, 40); if (v && S.cats[k].indexOf(v) < 0){ S.cats[k].push(v); saveMeta(); render(); toast("Qo'shildi"); } }
+  else if (t.dataset.delcat){ var p = t.dataset.delcat.split(":"); S.cats[p[0]].splice(+p[1], 1); saveMeta(); render(); toast("Kategoriya olib tashlandi (eski yozuvlar saqlanadi)"); }
+});
+
+function syncBack(){
+  if (!tg || !tg.BackButton) return;
+  try {
+    var need = sheetOpen() || (S.tab === "j" && !!S.fund);
+    if (need) tg.BackButton.show(); else tg.BackButton.hide();
+  } catch(e){}
+}
+if (tg && tg.BackButton){ try { tg.BackButton.onClick(function(){ if (sheetOpen()) closeSheet(); else if (S.fund){ S.fund = null; render(); } }); } catch(e){} }
+
+render();
+loadState().then(render, function(){ S.ready = true; render(); toast("Ma'lumotni o'qib bo'lmadi. Qayta oching.", true); });
+window.__S = S; window.__imp = importData;
+})();
+</script>
+</body>
+</html>
