@@ -167,7 +167,7 @@ function toast(m, bad){ var t = $("#toast"); t.textContent = m; t.className = ba
 /* ================= ma'lumot ================= */
 var DEF_CATS = { d: ["Komp puli","Bar puli","Boshqa daromad"], r: ["Ijara","Elektr energiya","Internet","Kredit to'lovi","Soliq","Oylik maosh","Bar uchun tovar","Ta'mirlash","Reklama","Boshqa rasxod"] };
 var S = { funds: [], j: [], h: [], cats: { d: DEF_CATS.d.slice(), r: DEF_CATS.r.slice() }, tab: "k", fund: null, hm: todayISO().slice(0, 7), ready: false, more: 40,
-  k: [], sh: [], pr: [], mv: [], cart: {}, kmode: "prod", kpay: "naqt", ktype: "komp", omode: "day", km: todayISO().slice(0, 7) };
+  k: [], sh: [], pr: [], mv: [], tabs: [], cart: {}, kmode: "prod", kpay: "naqt", ktype: "komp", omode: "day", km: todayISO().slice(0, 7) };
 
 function monthsOf(list){ var m = {}; list.forEach(function(o){ m[o.dt.slice(0, 7)] = 1; }); return Object.keys(m); }
 function saveMeta(){ return saveName("meta", { funds: S.funds, cats: S.cats }); }
@@ -444,17 +444,19 @@ function validJ(o){ return o && (o.kind === "in" || o.kind === "out") && o.sum >
 function validH(o){ return o && (o.kind === "d" || o.kind === "r") && (o.pay === "naqt" || o.pay === "karta") && o.sum > 0 && o.dt && o.cat && o.id != null; }
 function validK(o){ return o && (o.type === "komp" || o.type === "bar") && (o.pay === "naqt" || o.pay === "karta") && o.sum > 0 && typeof o.dt === "string" && o.id != null; }
 function importKassa(k){
+  var tbs = Array.isArray(k.tabs) ? k.tabs : [];
   var ops = Array.isArray(k.ops) ? k.ops : [], sh = Array.isArray(k.shifts) ? k.shifts : [], pr = Array.isArray(k.products) ? k.products : [], mv = Array.isArray(k.moves) ? k.moves : [];
   if (!ops.every(validK) || !sh.every(function(s){ return s && s.id != null && typeof s.open_dt === "string" && "open_cash" in s; }) ||
       !pr.every(function(p){ return p && p.id != null && p.name; }) || !mv.every(function(m){ return m && m.id != null && m.pid != null && typeof m.dt === "string" && typeof m.qty === "number"; })) return null;
   var c = [0, 0, 0, 0], mk = {}, mm = {};
+  S.tabs = uni(S.tabs, tbs).filter(function(t){ return t && t.id != null; });
   function ids(l){ var r = {}; l.forEach(function(x){ r[x.id] = 1; }); return r; }
   var i1 = ids(S.k), i2 = ids(S.sh), i3 = ids(S.pr), i4 = ids(S.mv);
   ops.forEach(function(o){ if (!i1[o.id]){ S.k.push(o); mk[o.dt.slice(0, 7)] = 1; c[0]++; } });
   sh.forEach(function(x){ if (!i2[x.id]){ S.sh.push(x); c[1]++; } });
   pr.forEach(function(x){ if (!i3[x.id]){ S.pr.push(x); c[2]++; } });
   mv.forEach(function(x){ if (!i4[x.id]){ S.mv.push(x); mm[x.dt.slice(0, 7)] = 1; c[3]++; } });
-  if (c[1]) saveSh(); if (c[2]) savePr();
+  if (c[1]) saveSh(); if (c[2]) savePr(); if (tbs.length) cloudDirty("shifts");
   Object.keys(mk).forEach(saveK); Object.keys(mm).forEach(saveMv);
   return { c: c };
 }
@@ -547,6 +549,7 @@ function kassaView(){
       h += '<div class="op" data-kop="' + o.id + '"><div class="l"><div>' + (o.type === "komp" ? "🖥 Komp" : "🍹 Bar") + ' · ' + (o.pay === "naqt" ? "Naqt" : "Karta") + '</div><div class="mut">' + o.dt.slice(11) + (o.note ? ' · ' + esc(o.note) : '') + '</div></div><b>' + fmt(o.sum) + '</b></div>'; });
       h += '</div>'; if (list.length > S.more) h += '<button class="btn ghost" id="more">Yana ko\'rsatish</button>'; }
   }
+  h += pcHtml();
   h += krepHtml();
   return h;
 }
@@ -576,6 +579,19 @@ function kprodHtml(){
 }
 function updCart(){ var e = $("#kprod"); if (e) e.innerHTML = kprodHtml(); }
 
+function pcHtml(){
+  var by = {}, total = 0;
+  S.tabs.forEach(function(t){ if (t.paid) return; (by[t.pc] = by[t.pc] || []).push(t); total += t.sum || 0; });
+  var pcs = Object.keys(by).map(Number).sort(function(a, b){ return a - b; });
+  var h = '<h2>Kompyuter hisoblari (to\'lanmagan)</h2>';
+  if (!pcs.length) return h + '<div class="card mut">Hisobi ochiq kompyuter yo\'q. Yozish kassa dasturida (kompyuterda) qilinadi.</div>';
+  h += '<div class="card" style="padding:4px 14px">';
+  pcs.forEach(function(n){
+    var sum = by[n].reduce(function(a, t){ return a + (t.sum || 0); }, 0);
+    h += '<div class="op" style="cursor:default"><div class="l"><div>🖥 PC ' + n + '</div><div class="mut">' + esc(by[n].map(function(t){ return t.note; }).join("; ")) + '</div></div><b style="color:var(--gold)">' + fmt(sum) + '</b></div>';
+  });
+  return h + '<div class="row" style="padding:10px 0 6px"><span class="mut">Jami qarz</span><b>' + fmt(total) + '</b></div></div>';
+}
 function krepHtml(){
   var sm = smapF(), y = +S.km.slice(0, 4), m = +S.km.slice(5, 7) - 1;
   var list = S.k.filter(function(o){ return opDay(o, sm).slice(0, 7) === S.km; }), by = {};
@@ -668,6 +684,7 @@ function kopSheet(id){
   twoStep($("#fdel"), function(){
     var ym = o.dt.slice(0, 7), mm = {}; S.mv.forEach(function(m){ if (m.op === o.id) mm[m.dt.slice(0, 7)] = 1; });
     S.k = S.k.filter(function(x){ return x !== o; }); S.mv = S.mv.filter(function(m){ return m.op !== o.id; });
+    S.tabs.forEach(function(t){ if (t.op === o.id){ t.paid = false; delete t.op; delete t.paid_dt; } });
     saveK(ym); Object.keys(mm).forEach(saveMv); closeSheet(); render(); toast("O'chirildi");
   });
 }
@@ -751,20 +768,20 @@ function cloudDirty(name){
   d.forEach(function(x){ DIRTY[x] = 1; }); schedulePush();
 }
 function docData(n){
-  if (n === "kassa") return { ops: S.k, shifts: S.sh, products: S.pr, moves: S.mv };
+  if (n === "kassa") return { ops: S.k, shifts: S.sh, products: S.pr, moves: S.mv, tabs: S.tabs };
   if (n === "hisob") return { ops: S.h, cats: S.cats };
   return { funds: S.funds, ops: S.j };
 }
 function applyDoc(n, d){
   d = d || {};
-  if (n === "kassa"){ S.k = d.ops || []; S.sh = d.shifts || []; S.pr = d.products || []; S.mv = d.moves || []; }
+  if (n === "kassa"){ S.k = d.ops || []; S.sh = d.shifts || []; S.pr = d.products || []; S.mv = d.moves || []; S.tabs = d.tabs || []; }
   else if (n === "hisob"){ S.h = d.ops || []; if (d.cats && d.cats.d && d.cats.r) S.cats = d.cats; }
   else { S.funds = d.funds || []; S.j = d.ops || []; }
 }
 function uni(a, b){ var seen = {}, r = []; (b || []).forEach(function(x){ seen[x.id] = 1; r.push(x); }); (a || []).forEach(function(x){ if (!seen[x.id]) r.push(x); }); return r; }
 function mergeInto(n, rd){
   rd = rd || {}; var ld = docData(n), m;
-  if (n === "kassa") m = { ops: uni(ld.ops, rd.ops), shifts: uni(ld.shifts, rd.shifts), products: uni(ld.products, rd.products), moves: uni(ld.moves, rd.moves) };
+  if (n === "kassa") m = { ops: uni(ld.ops, rd.ops), shifts: uni(ld.shifts, rd.shifts), products: uni(ld.products, rd.products), moves: uni(ld.moves, rd.moves), tabs: uni(ld.tabs, rd.tabs) };
   else if (n === "hisob"){
     var c = { d: ((rd.cats && rd.cats.d) || []).slice(), r: ((rd.cats && rd.cats.r) || []).slice() };
     ["d", "r"].forEach(function(k){ (ld.cats[k] || []).forEach(function(x){ if (c[k].indexOf(x) < 0) c[k].push(x); }); });
