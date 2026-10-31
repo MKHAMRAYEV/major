@@ -287,10 +287,13 @@ function hisobView(){
   var y = +S.hm.slice(0, 4), m = +S.hm.slice(5, 7) - 1;
   var list = S.h.filter(function(o){ return o.dt.slice(0, 7) === S.hm; }).sort(function(a, b){ return a.dt < b.dt ? 1 : a.dt > b.dt ? -1 : b.id - a.id; });
   var r = hsum(list);
+  var prev = hsum(S.h.filter(function(o){ return o.dt.slice(0, 7) < S.hm; }));
+  var endN = prev.naqt + r.naqt, endK = prev.karta + r.karta;
   var h = '<h1>MAJOR · HISOB-KITOB</h1><div class="mon"><button id="pm">‹</button><b>' + MONTHS[m] + ' ' + y + '</b><button id="nm">›</button></div>';
-  h += '<div class="card"><div class="mut">Foyda</div><div class="big ' + (r.foyda < 0 ? "neg" : "") + '">' + fmt(r.foyda) + '</div></div>';
-  h += '<div class="grid2"><div class="tile"><span class="mut">Daromad</span><b class="pos">' + fmt(r.d) + '</b></div><div class="tile"><span class="mut">Rasxod</span><b class="neg">' + fmt(r.r) + '</b></div>' +
-       '<div class="tile"><span class="mut">💵 Naqt</span><b>' + fmt(r.naqt) + '</b></div><div class="tile"><span class="mut">💳 Karta</span><b>' + fmt(r.karta) + '</b></div></div>';
+  h += '<div class="card"><div class="mut">Oy oxiridagi qoldiq (naqt + karta)</div><div class="big ' + (endN + endK < 0 ? "neg" : "") + '">' + fmt(endN + endK) + '</div>' +
+       '<div class="mut" style="margin-top:8px">Oldingi oylardan: <b style="color:var(--txt)">' + fmt(prev.naqt + prev.karta) + '</b> · Bu oy foyda: <b class="' + (r.foyda < 0 ? "neg" : "pos") + '">' + fmt(r.foyda) + '</b></div></div>';
+  h += '<div class="grid2"><div class="tile"><span class="mut">💵 Naqt qoldiq</span><b>' + fmt(endN) + '</b><span class="mut" style="font-size:12px">oldingidan: ' + fmt(prev.naqt) + '</span></div><div class="tile"><span class="mut">💳 Karta qoldiq</span><b>' + fmt(endK) + '</b><span class="mut" style="font-size:12px">oldingidan: ' + fmt(prev.karta) + '</span></div>' +
+       '<div class="tile"><span class="mut">Daromad (oy)</span><b class="pos">' + fmt(r.d) + '</b></div><div class="tile"><span class="mut">Rasxod (oy)</span><b class="neg">' + fmt(r.r) + '</b></div></div>';
   h += '<div class="grid2" style="margin-top:12px"><button class="btn grn" data-h="d">➕ Daromad</button><button class="btn red" data-h="r">➖ Rasxod</button></div>';
   ["d", "r"].forEach(function(k){
     var by = {}; list.forEach(function(o){ if (o.kind === k) by[o.cat] = (by[o.cat] || 0) + o.sum; });
