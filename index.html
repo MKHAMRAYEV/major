@@ -71,6 +71,10 @@ textarea{min-height:110px;font-size:13px;font-family:ui-monospace,Menlo,Consolas
 .pt{position:relative;background:var(--p);border:1px solid var(--line);border-radius:12px;padding:10px 4px;text-align:center;min-height:86px;display:flex;flex-direction:column;justify-content:center;gap:2px;color:var(--txt)}
 .pt span{font-weight:600;font-size:14px;line-height:1.15}.pt b{color:var(--gold);font-size:13px}.pt small{font-size:11px;color:var(--mut)}
 .pt.sel{border-color:var(--gold);background:#2a2410}.pt i{position:absolute;top:4px;right:6px;font-style:normal;font-weight:800;color:var(--gold);font-size:14px}
+.pcg{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.pcb{background:var(--p2);border:1px solid var(--line);border-radius:10px;padding:9px 0;color:var(--txt);font-size:13px;font-weight:600;min-height:52px}
+.pcb small{display:block;font-size:10px;font-weight:700;margin-top:1px}
+.pcb.has{border-color:var(--gold);background:#2a2410;color:var(--gold)}
 .x{background:var(--p2);border-radius:8px;padding:4px 10px;color:var(--red);font-size:14px}
 </style>
 </head>
@@ -184,6 +188,7 @@ function loadState(){
       else if (/^h_\d{4}-\d{2}$/.test(nm)) S.h = S.h.concat(v);
       else if (nm === "shifts") S.sh = v;
       else if (nm === "prod") S.pr = v;
+      else if (nm === "tabs") S.tabs = v;
       else if (/^k_\d{4}-\d{2}$/.test(nm)) S.k = S.k.concat(v);
       else if (/^mv_\d{4}-\d{2}$/.test(nm)) S.mv = S.mv.concat(v);
     });
@@ -582,18 +587,95 @@ function kprodHtml(){
 }
 function updCart(){ var e = $("#kprod"); if (e) e.innerHTML = kprodHtml(); }
 
+var PC_COUNT = 30, pcCart = {};
+function saveTabs(){ return saveName("tabs", S.tabs); }
+function pcEntries(n){ return S.tabs.filter(function(t){ return t.pc === n && !t.paid; }).sort(function(a, b){ return a.dt < b.dt ? -1 : a.dt > b.dt ? 1 : a.id - b.id; }); }
+function pcDebt(n){ return pcEntries(n).reduce(function(a, t){ return a + (t.sum || 0); }, 0); }
 function pcHtml(){
-  var by = {}, total = 0;
-  S.tabs.forEach(function(t){ if (t.paid) return; (by[t.pc] = by[t.pc] || []).push(t); total += t.sum || 0; });
-  var pcs = Object.keys(by).map(Number).sort(function(a, b){ return a - b; });
-  var h = '<h2>Kompyuter hisoblari (to\'lanmagan)</h2>';
-  if (!pcs.length) return h + '<div class="card mut">Hisobi ochiq kompyuter yo\'q. Yozish kassa dasturida (kompyuterda) qilinadi.</div>';
-  h += '<div class="card" style="padding:4px 14px">';
-  pcs.forEach(function(n){
-    var sum = by[n].reduce(function(a, t){ return a + (t.sum || 0); }, 0);
-    h += '<div class="op" style="cursor:default"><div class="l"><div>🖥 PC ' + n + '</div><div class="mut">' + esc(by[n].map(function(t){ return t.note; }).join("; ")) + '</div></div><b style="color:var(--gold)">' + fmt(sum) + '</b></div>';
+  var total = 0, cnt = 0, h = '<h2>Kompyuter hisoblari</h2><div class="pcg">';
+  for (var n = 1; n <= PC_COUNT; n++){
+    var d = pcDebt(n); if (d > 0){ total += d; cnt++; }
+    h += '<button class="pcb' + (d ? " has" : "") + '" data-pc="' + n + '">PC ' + n + (d ? '<small>' + fmt(d) + '</small>' : '') + '</button>';
+  }
+  h += '</div>';
+  h += cnt ? '<div class="mut" style="margin-top:8px">Hisobi ochiq: <b style="color:var(--txt)">' + cnt + '</b> ta · jami <b style="color:var(--gold)">' + fmt(total) + '</b> so\'m</div>' : '<div class="mut" style="margin-top:8px">Hisobi ochiq kompyuter yo\'q. Kompyuterni bosib, bardan olgan narsani yozing.</div>';
+  return h;
+}
+function pcSheet(n){
+  var es = pcEntries(n), d = pcDebt(n), sh = curShift(), today = todayISO();
+  var h = '<h3>🖥 PC ' + n + '</h3><div class="big" style="font-size:26px">' + (d ? fmt(d) + ' <span style="font-size:14px">so\'m</span>' : '<span class="mut" style="font-size:18px">Hisob yo\'q</span>') + '</div>';
+  if (es.length){
+    h += '<div style="margin-top:8px">';
+    es.forEach(function(e){
+      h += '<div class="op" style="cursor:default"><div class="l"><div>' + esc(e.note) + '</div><div class="mut">' + (e.dt.slice(0, 10) === today ? "" : ddmm(e.dt.slice(0, 10)).slice(0, 5) + " ") + e.dt.slice(11) + '</div></div><div style="display:flex;gap:8px;align-items:center"><b>' + fmt(e.sum) + '</b><button class="x" data-tdel="' + e.id + '">✕</button></div></div>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="acts"><button class="btn" id="pcadd">➕ Narsa yozish</button></div>';
+  if (d){
+    h += '<div class="grid2" style="margin-top:10px"><button class="btn grn" id="pcn">💵 To\'landi · naqt</button><button class="btn" id="pck" style="background:#a374ff;color:#12081f">💳 To\'landi · karta</button></div>';
+    if (!sh) h += '<div class="mut" style="margin-top:8px">To\'lovni qabul qilish uchun avval Kassa bo\'limida kassani oching.</div>';
+  }
+  openSheet(h);
+  $("#pcadd").onclick = function(){ pcCart = {}; pcAddSheet(n); };
+  if (d){ $("#pcn").onclick = function(){ pcPay(n, "naqt"); }; $("#pck").onclick = function(){ pcPay(n, "karta"); }; }
+  [].forEach.call(document.querySelectorAll("#sheet [data-tdel]"), function(b){
+    var armed = false;
+    b.onclick = function(){
+      if (!armed){ armed = true; b.textContent = "O'chirilsinmi?"; setTimeout(function(){ armed = false; b.textContent = "✕"; }, 3000); return; }
+      var id = b.dataset.tdel, t = S.tabs.filter(function(x){ return String(x.id) === String(id); })[0]; if (!t) return;
+      var mm = {}; S.mv.forEach(function(m){ if (String(m.tab) === String(id)) mm[m.dt.slice(0, 7)] = 1; });
+      S.tabs = S.tabs.filter(function(x){ return x !== t; }); S.mv = S.mv.filter(function(m){ return String(m.tab) !== String(id); });
+      saveTabs(); Object.keys(mm).forEach(saveMv); render(); pcSheet(n); toast("O'chirildi, ombor qaytdi");
+    };
   });
-  return h + '<div class="row" style="padding:10px 0 6px"><span class="mut">Jami qarz</span><b>' + fmt(total) + '</b></div></div>';
+}
+function pcPay(n, pay){
+  var sh = curShift(); if (!sh){ toast("Avval Kassa bo'limida kassani oching", true); return; }
+  var es = pcEntries(n); if (!es.length) return;
+  var total = 0, agg = {}, order = [];
+  es.forEach(function(t){ total += t.sum || 0; (t.items || []).forEach(function(it){ if (!(it.name in agg)){ agg[it.name] = 0; order.push(it.name); } agg[it.name] += it.q; }); });
+  var parts = order.map(function(k){ return k + " ×" + agg[k]; }); if (!parts.length) parts = es.map(function(t){ return t.note; });
+  var now = nowDT(), op = { id: newId(), shift: sh.id, dt: now, type: "bar", pay: pay, sum: total, note: "PC " + n + ": " + parts.join(", ") };
+  S.k.push(op); es.forEach(function(t){ t.paid = true; t.op = op.id; t.paid_dt = now; });
+  saveK(now.slice(0, 7)); saveTabs(); closeSheet(); render(); toast("✅ PC " + n + " to'ladi: " + fmt(total) + " (" + (pay === "naqt" ? "naqt" : "karta") + ")");
+}
+function pcAddSheet(n){
+  var ps = livePr(); if (!ps.length){ toast("Avval Ombor bo'limidan mahsulot qo'shing", true); return; }
+  function draw(){
+    var top = $("#sheet").scrollTop, st = stockMap(), total = 0, ids = Object.keys(pcCart);
+    var h = '<h3>PC ' + n + ' · nima olindi?</h3><div class="pg">';
+    ps.forEach(function(p){
+      var q = pcCart[p.id] || 0, left = st[p.id] || 0;
+      h += '<button class="pt' + (q ? " sel" : "") + '" data-padd="' + p.id + '">' + (q ? '<i>×' + q + '</i>' : '') + '<span>' + esc(p.name) + '</span><b>' + fmt(p.price || 0) + '</b><small class="' + (left <= (p.min || 0) ? "neg" : "") + '">qoldi: ' + left + '</small></button>';
+    });
+    h += '</div>';
+    if (ids.length){
+      h += '<div class="card" style="margin-top:10px">';
+      ids.forEach(function(id){ var p = prodById(id), q = pcCart[id]; total += (p.price || 0) * q;
+        h += '<div class="row" style="padding:5px 0"><span>' + esc(p.name) + '</span><span><button class="x" style="color:var(--txt)" data-pmin="' + id + '">−</button> <b>' + q + '</b> <button class="x" style="color:var(--txt)" data-padd="' + id + '">+</button></span><b>' + fmt((p.price || 0) * q) + '</b></div>'; });
+      h += '<div class="row" style="margin-top:8px"><span class="mut">Jami</span><span class="big" style="font-size:24px">' + fmt(total) + '</span></div></div>';
+    }
+    h += '<div class="acts"><button class="btn ghost" id="pcback">‹ Orqaga</button><button class="btn" id="pcsave"' + (ids.length ? "" : " disabled style=\"opacity:.4\"") + '>PC ' + n + ' ga yozish</button></div>';
+    openSheet(h, function(){ pcSheet(n); });
+    $("#sheet").scrollTop = top;
+    [].forEach.call(document.querySelectorAll("#sheet [data-padd]"), function(b){ b.onclick = function(){ pcCart[b.dataset.padd] = (pcCart[b.dataset.padd] || 0) + 1; draw(); }; });
+    [].forEach.call(document.querySelectorAll("#sheet [data-pmin]"), function(b){ b.onclick = function(){ var id = b.dataset.pmin; if (pcCart[id] > 1) pcCart[id]--; else delete pcCart[id]; draw(); }; });
+    $("#pcback").onclick = function(){ pcSheet(n); };
+    $("#pcsave").onclick = function(){
+      var items = [], tot = 0, parts = [], over = [], st2 = stockMap();
+      Object.keys(pcCart).forEach(function(id){ var p = prodById(id), q = pcCart[id]; if (!p) return; items.push({ pid: p.id, q: q, price: p.price || 0, name: p.name }); tot += (p.price || 0) * q; parts.push(p.name + " ×" + q); if ((st2[p.id] || 0) < q) over.push(p.name); });
+      if (!items.length) return;
+      if (tot <= 0){ toast("Narx 0. Mahsulot narxini kiriting.", true); return; }
+      var sh = curShift(), now = nowDT(), t = { id: newId(), pc: n, dt: now, sum: tot, note: parts.join(", "), paid: false, items: items };
+      if (sh) t.shift = sh.id;
+      S.tabs.push(t);
+      items.forEach(function(it){ var ex = { price: it.price, tab: t.id, dt: now }; if (sh) ex.shift = sh.id; addMove(it.pid, "sale", -it.q, "PC " + n + " hisobi", ex); });
+      saveTabs(); saveMv(now.slice(0, 7)); pcCart = {}; render(); pcSheet(n);
+      if (over.length) toast("Yozildi. Diqqat, omborda yetmagan: " + over.join(", "), true); else toast("✅ PC " + n + " hisobiga yozildi: " + fmt(tot));
+    };
+  }
+  draw();
 }
 function krepHtml(){
   var sm = smapF(), y = +S.km.slice(0, 4), m = +S.km.slice(5, 7) - 1;
@@ -753,6 +835,7 @@ function kassaClick(t){
     return true;
   }
   if (t.dataset.kchip){ var i = $("#ksum"); i.value = String((parseSum(i.value) || 0) + +t.dataset.kchip); return true; }
+  if (t.dataset.pc){ pcSheet(+t.dataset.pc); return true; }
   if (t.dataset.kop){ kopSheet(t.dataset.kop); return true; }
   if (t.dataset.ksh){ shiftSheet(t.dataset.ksh); return true; }
   if (t.dataset.om){ S.omode = t.dataset.om; render(); return true; }
@@ -884,7 +967,7 @@ function cloudClick(t){
 }
 /* ================= hodisalar ================= */
 document.addEventListener("click", function(e){
-  var t = e.target.closest("button,[data-fund],[data-jop],[data-hop],[data-kop],[data-ksh],[data-prod]"); if (!t) return;
+  var t = e.target.closest("button,[data-fund],[data-jop],[data-hop],[data-kop],[data-ksh],[data-prod],[data-pc]"); if (!t) return;
   if (t.closest("nav")){ S.tab = t.dataset.t; S.fund = null; S.more = 40; closeSheet(); render(); window.scrollTo(0, 0); return; }
   if (kassaClick(t)) return;
   if (t.dataset.fund){ S.fund = t.dataset.fund; S.more = 40; render(); window.scrollTo(0, 0); }
